@@ -1,0 +1,3 @@
+cp ../src/c/* ../uhd/host/examples/
+cd ../uhd/host/build
+make
