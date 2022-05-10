@@ -1,0 +1,28 @@
+
+root = '../../rx_outputs/Sea Grant U2B Van Atta 05-05-2022/rx_sg_backscatter_u2b_ind_vanatta_0deg_20kfc_1kHz_square_0,5m_depth_30cm_dis_20cm_hphydro';
+
+Ntrials = 2;
+
+if Ntrials > 1
+    for fnum=0:Ntrials-1
+        sig = read_complex_binary(strcat(root,'_',int2str(fnum),'.dat'));
+        
+        rx_signals(:,fnum+1) = real(sig);
+    end
+else
+    sig = read_complex_binary(strcat(root,'_0.dat'));
+    rx_signals(:,1) = real(sig);
+end
+
+rx_len = length(rx_signals(:,1));
+
+fs = 2e5;
+
+[pxx,w] = periodogram(rx_signals);
+f = w/pi*fs/2;
+
+[carrier_pow,carrier_index] = max(pxx);
+carrier_freq = f()
+
+plot(f,10*log10(pxx(:,1)));
+
