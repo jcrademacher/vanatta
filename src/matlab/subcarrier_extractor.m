@@ -1,7 +1,7 @@
 
-root = '../../rx_outputs/Sea Grant PAB Van Atta 05-05-2022/rx_sg_+20cm_backscatter_pab2_ind_tmux_22kfc_1kHz_square_0,5m_depth_30cm_dis_20cm_hphydro';
+root = '../../rx_outputs/River PAB Van Atta 05-11-2022/rx_river_backscatter_pab24_ind_vanatta_+30deg_22kfc_1kHz_square_1m_depth_1,3m_dis_30cm_hphydro';
 
-Ntrials = 2;
+Ntrials = 3;
 fmod = 1e3;
 
 if Ntrials > 1

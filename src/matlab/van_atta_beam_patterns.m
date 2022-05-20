@@ -1,8 +1,8 @@
-global params;
-close all;
-params.d = 7.5e-2;
+global params phimin phimax;
+%close all;
+params.d = 7e-2;
 params.c = 1500;
-params.f = 20e3;
+params.f = 22e3;
 params.N = 2;
 params.A = 1;
 params.r = 1;
@@ -19,20 +19,24 @@ fmax = 60e3;
 
 atot_db = generate_pattern(params);
 
-global Ntheta theta min_r_db pol;
+global Ntheta theta min_r_db pol pol_steer;
 
 min_r_db = -60;
+max_r_db = 20;
 Ntheta = 1000;
-theta = linspace(-pi/2,pi/2,Ntheta); 
+theta = linspace(phimin,phimax,Ntheta); 
 
-f = figure;
+f = figure(1);
 ax = axes('Parent',f,'position',[0.13 0.39 0.77 0.54]);
+%subplot(1,3,3);
 pol = polarplot(theta,atot_db);
-rlim([min_r_db inf]);
+hold on; 
+pol_steer = polarplot(params.phi*ones(1,10),linspace(min_r_db,max_r_db,10),'--');
+rlim([min_r_db max_r_db]);
 
 global dslider_label phislider_label fslider_label;
 
-% sliders and labels
+%sliders and labels
 dslider = uicontrol('Parent',f,'Style','slider','Position',[100,800,230,23],...
               'value',params.d, 'min',dmin, 'max',dmax,'Tag','d');
 dslider_label = uicontrol('Parent',f,'Style','text','Position',[100,770,230,23],...
@@ -61,34 +65,62 @@ fslider.Callback = @update_plot;
 Ndrop.Callback = @update_plot;
 
 
+% R1 = 400;
+% L1 = 100e-6;
+% C1 = 30e-9;
+% 
+% R2 = 65;
+% L2 = 150e-6;
+% C2 = 25e-9;
+% 
+% f = 20e3;
+% s = 1j*2*pi*f;
+% 
+% y = 1/(1/(s*C1)+1/(s*C2)+s*(L1+L2));
+% Y = [y -y; -y y];
+% 
+% F = [1/(2*sqrt(R1)) 0; 0 1/(2*sqrt(R2))];
+% ZR = [R1 0; 0 R2];
+% 
+% i = eye(2);
+% S = F*(i-ZR*Y)*(i+ZR*Y)^(-1)*F^(-1);
+% 
+% gamma1 = S(2,2);
+% 
+% Zr = R2;
+% Zl = R1+1/(s*C1)+1/(s*C2)+s*(L1+L2);
+% 
+% gamma2 = (Zl-conj(Zr))/(Zl+Zr);
+
 function atot = generate_pattern(params)
-    global Ntheta theta min_r_db;
+    global Ntheta theta min_r_db phimin phimax;
 
     at = zeros(params.N,1);    % transmitted wave column vector
     an = zeros(params.N,Ntheta);    % transmitted wave at observed point theta (far field)
-    sij = flip(eye(params.N)); % scattering coefficients anti-diagonal matrix (assumes wave is perfectly received by node)
-
-    sij(1,2) = sij(1,2)*exp(1j*pi/6);
+    sij = get_sparams([55.9 1350e-6 45e-9],[47.5 1310e-6 44.4e-9],params.f);
 
     lambda = params.c / params.f;
     k = 2*pi/lambda;
     
     for n=1:params.N
-        at(n) = sij(n,params.N+1-n)*params.A*exp(-1j*k*sin(params.phi)*(params.N-n)*params.d);
-        an(n,:) = at(n)*exp(1j*k*(params.r-(params.N-n)*params.d*sin(theta)));
+        at(n) = params.A*(sij(n,params.N+1-n)*exp(-1j*k*sin(params.phi)*(params.N-n)*params.d)+ ...
+                    sij(n,n)*exp(-1j*k*sin(params.phi)*(n-1)*params.d));
+        an(n,:) = at(n)*exp(1j*k*(params.r-(n-1)*params.d*sin(theta)));
     end
     
     atot = abs(sum(an,1));
     %atot_norm = atot/max(atot);
     atot = 20*log10(atot);
 
-    disp(['Max array val: ' num2str(max(atot)) 'dB']);
+    direction_val = atot(floor((params.phi-phimin)/(phimax-phimin)*(Ntheta-1)+1));
+
+    disp(['Value in direction: ' num2str(direction_val) 'dB']);
 
     atot(atot < min_r_db) = min_r_db;
 end
 
 function a = update_plot(es,ed)
-    global dslider_label phislider_label fslider_label pol params;
+    global dslider_label phislider_label fslider_label pol pol_steer params;
 
     switch ed.Source.Tag
         case 'd'
@@ -106,5 +138,7 @@ function a = update_plot(es,ed)
     end
 
     set(pol,'YData',generate_pattern(params));
+    set(pol_steer,'XData',params.phi*ones(1,10));
 end
+
 
