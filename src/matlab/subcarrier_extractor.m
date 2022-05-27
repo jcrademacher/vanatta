@@ -1,3 +1,5 @@
+clear pxx;
+
 % place question mark where degree # should be
 folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 05-26-2022/';
 file = 'rx_river_backscatter_pab14_ind_array_?deg_tmux_22kfc_1kHz_square_1m_depth_5,8m_dis_4,8m_hphydro';
