@@ -4,9 +4,10 @@ params.d = 7e-2;
 params.c = 1500;
 params.f = 22e3;
 params.N = 2;
-params.A = 1;
+params.A = 10^(-40/20);
 params.r = 1;
 params.phi = 0;
+params.do_direction_val = 1;
 
 dmin = 1e-2;
 dmax = 20e-2;
@@ -21,8 +22,8 @@ atot_db = generate_pattern(params);
 
 global Ntheta theta min_r_db pol pol_steer;
 
-min_r_db = -60;
-max_r_db = 20;
+min_r_db = -50;
+max_r_db = -30;
 Ntheta = 1000;
 theta = linspace(phimin,phimax,Ntheta); 
 
@@ -95,17 +96,23 @@ Ndrop.Callback = @update_plot;
 function atot = generate_pattern(params)
     global Ntheta theta min_r_db phimin phimax;
 
-    at = zeros(params.N,1);    % transmitted wave column vector
+    at = zeros(params.N,Ntheta);    % transmitted wave column vector
     an = zeros(params.N,Ntheta);    % transmitted wave at observed point theta (far field)
     sij = get_sparams([55.9 1350e-6 45e-9],[47.5 1310e-6 44.4e-9],params.f);
 
     lambda = params.c / params.f;
     k = 2*pi/lambda;
+
+    phi = params.phi;
+
+    if params.do_direction_val == 1
+         phi = theta;
+    end
     
     for n=1:params.N
-        at(n) = params.A*(sij(n,params.N+1-n)*exp(-1j*k*sin(params.phi)*(params.N-n)*params.d)+ ...
-                    sij(n,n)*exp(-1j*k*sin(params.phi)*(n-1)*params.d));
-        an(n,:) = at(n)*exp(1j*k*(params.r-(n-1)*params.d*sin(theta)));
+        at(n,:) = params.A*(sij(n,params.N+1-n)*exp(-1j*k*sin(phi)*(params.N-n)*params.d)+ ...
+                    sij(n,n)*exp(-1j*k*sin(phi)*(n-1)*params.d));
+        an(n,:) = at(n,:).*exp(1j*k*(params.r-(n-1)*params.d*sin(theta)));
     end
     
     atot = abs(sum(an,1));

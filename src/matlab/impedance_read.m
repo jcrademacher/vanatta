@@ -1,10 +1,10 @@
-node1 = readmatrix("../../impedance/PAB2G_IND_RX_IMPEDANCE_RIVER_ROTATOR_8020.CSV");
+node1 = readmatrix("../../impedance/PAB1_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
 node1 = node1(1:201,:);
 
-node2 = readmatrix("../../impedance/PAB4G_IND_RX_IMPEDANCE_RIVER_ROTATOR_8020.CSV");
+node2 = readmatrix("../../impedance/PAB4_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
 node2 = node2(1:201,:);
 
-% node3 = readmatrix("../../impedance/PAB3G_IND_RX_IMPEDANCE_SG.CSV");
+% node3 = readmatrix("../../impedance/PAB4_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
 % node3 = node3(1:201,:);
 % 
 % node4 = readmatrix("../../impedance/PAB4G_IND_RX_IMPEDANCE_SG.CSV");
