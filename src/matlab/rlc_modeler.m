@@ -17,15 +17,18 @@ x = node(ifmin:ifmax,3);
 ydata = [r,x];
 zdata = r+1j*x;
 % % % 
-%rlc(1) = 250;
-% rlc(2) = 10e-5;
-% rlc(3) = 30e-9;
+%rlc(1) = 200;
+% rlc(2) = 100e-5;
+% rlc(3) = 11e-9;
 % rlc(4) = 3e-9;
 
 rlc0 = rlc;
 
-options = optimoptions('lsqcurvefit','StepTolerance',1e-9);
-[rlc,resnorm,residuals,exitflag,output] = lsqcurvefit(@rlc_model,rlc0,f,ydata,[0 0 0 0],[]);
+func_min = @(rlc) rlc_model(rlc,f)-ydata;
+
+options = optimoptions('lsqnonlin','StepTolerance',1e-10,...
+    'MaxFunctionEvaluations',1e4,'MaxIterations',1e4,'Algorithm','trust-region-reflective');
+[rlc,resnorm,residuals,exitflag,output] = lsqnonlin(func_min,rlc0,[0 0 0 0],[],options);
 
 % zopt = F(rlc,f);
 % 

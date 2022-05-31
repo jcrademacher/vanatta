@@ -15,6 +15,12 @@ Ndeg = length(degree_list);
 measured_pattern = zeros(Ndeg,2);
 measured_pattern(:,1) = degree_list * pi/180;
 
+avg_subcar_pow_trial = zeros(Ndeg,Ntrials);
+
+figure(1);
+figure(2);
+lg = legend;
+
 for n=1:Ndeg
     filename = strrep(root,"?",num2str(degree_list(n)));
 
@@ -47,16 +53,27 @@ for n=1:Ndeg
     subcarrier_right_max = max(pxx(subcarrier_right_window,:));
     
     avg_subcarrier_pow = mean(cat(2,subcarrier_left_max,subcarrier_right_max));
+    avg_subcar_pow_trial(n,:) = mean(cat(1,subcarrier_left_max,subcarrier_right_max),1);
     
     measured_pattern(n,2) = 10*log10(avg_subcarrier_pow);
 %     disp("Average subcarrier power (dB): ");
 %     disp(10*log10(avg_subcarrier_pow));
+    
+    [f,x] = ecdf(10*log10(avg_subcar_pow_trial(n,:)));
+    figure(2);
+    hold on;
+    plot(x,f);
+    lg.String{n} = strcat(num2str(degree_list(n))," deg");
 end
 
+figure(1);
 polarplot(measured_pattern(:,1),measured_pattern(:,2));
 hold on;
-rlim([-60 -50]);
+rlim([-80 -50]);
 
+figure(2);
+xlabel("Subcarrier Power (dB)");
+ylabel("F(x)");
 
 %plot(f,10*log10(pxx(:,1)));
 
