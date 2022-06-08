@@ -1,8 +1,8 @@
-folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Phase Tests 06-06-2022/';
-file = 'rx_river_single_phase_pab_007B_?_*deg_18,5kfc_1m_depth_hphydro_.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Phase Tests 06-08-2022/';
+file = 'rx_phase_pab_007B_006A_007A_004A_*deg_2m_depth_2,5m_u2b';
 root = strcat(folder,file);
 
-node_list = ["006A","007A","004A"];
+node_list = ["007B","006A","007A","004A"];
 
 fs = 2e5;
 Nsamps = 10*fs;
@@ -32,12 +32,19 @@ for ang=-45:45:45
 
     filename = strrep(root,"*",num2str(ang));
 
-    for n=1:length(node_list)/2
-        data = read_complex_binary(strcat(filename,"_",num2str(n-1)));
-        node1 = real(data(1:Nsamps));
-        node2 = imag(data(1:Nsamps));
-    
-        node1 = filter(bp,node1);
+    data = read_complex_binary(strcat(filename,"_0",".dat"));
+    node1 = real(data(1:Nsamps));
+    node1 = filter(bp,node1);
+
+    for n=2:length(node_list)
+        read_filename = strcat(filename,"_",num2str(floor((n-1)/2)),".dat");
+        data = read_complex_binary(read_filename);
+        if mod(n,2) == 0
+            node2 = imag(data(1:Nsamps));
+        else
+            node2 = real(data(1:Nsamps));
+        end
+   
         node2 = filter(bp,node2);
         
         fft1 = fft(node1.*window,Nfft);
@@ -54,7 +61,7 @@ for ang=-45:45:45
 %             meas_ang = meas_ang + 2*pi*(n-1)*sign(ang);
 %         end
 
-        exp_phase_diff = [exp_phase_diff angle(exp(-1j*2*pi*n*d*sin(ang/180*pi)/lambda))];
+        exp_phase_diff = [exp_phase_diff angle(exp(1j*2*pi*(n-1)*d*sin(ang/180*pi)/lambda))];
         act_phase_diff = [act_phase_diff meas_ang];
     end
 
@@ -63,8 +70,9 @@ for ang=-45:45:45
     hold on;
     plot(act_phase_diff/pi*180);
     xlabel("n");
-    ylabel("Phase (rad)");
+    ylabel("Phase (deg)");
     title(strcat("Phase vs. element ",num2str(ang)," deg"));
+    legend("Expected","Actual");
     ylim([-180 180]);
 
     i = i+1;
