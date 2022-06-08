@@ -22,7 +22,7 @@ atot_db = generate_pattern(params);
 
 global Ntheta theta min_r_db pol pol_steer;
 
-min_r_db = -50;
+min_r_db = -80;
 max_r_db = -30;
 Ntheta = 1000;
 theta = linspace(phimin,phimax,Ntheta); 
