@@ -1,14 +1,14 @@
 %%%% DESIGN PARAMETERS %%%%
 Nel = 1;
 fs = 2e5;               % USRP sampling rate (is changed throughout script due to downsampling)
-fc = 22e3;              % carrier frequency
+fc = 18.5e3;              % carrier frequency
 fb = 1e3;
 
 % generate low and highpass filters
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
 fsb1 = fb/100;
-fpb1 = fb/4;
+fpb1 = fb;
 dfac = 5;   % donwsampling factor
 
 % highpass for after downsampling
@@ -17,16 +17,16 @@ hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
 
 % lowpass after downconversion, before downsampling
 lpFilt = designfilt('lowpassfir' ...
-                    ,'PassbandFrequency',fs/dfac/4*2/fs...
-                    ,'StopbandFrequency',fs/dfac/4*3/2*2/fs,'StopbandAttenuation' ...
+                    ,'PassbandFrequency',fs/dfac/8*2/fs...
+                    ,'StopbandFrequency',fs/dfac/8*3/2*2/fs,'StopbandAttenuation' ...
                     ,80,'PassbandRipple',0.1);
 
 %%%% END DESIGN PARAMETERS %%%%
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/sk/oceans/vanatta/rx_outputs/Sea Grant PAB Van Atta 05-05-2022/';
-file = 'rx_sg_backscatter_pab_ind_array_0deg_tmux_22kfc_1kHz_square_0,5m_depth_30cm_dis_20cm_hphydro';
+folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 05-26-2022/';
+file = 'rx_river_backscatter_pab14_ind_array_0deg_tmux_18,5kfc_1kHz_square_1m_depth_5,8m_dis_4,8m_hphydro';
 root = strcat(folder,file);
 
 % initializes size
@@ -146,6 +146,11 @@ plot(f,10*log10(pxx));
 
 figure;
 plot(imag(rx_baseband));
+
+tot_pow = bandpower(rx_baseband);
+
+disp("Total Average Power (dB):");
+disp(num2str(10*log10(tot_pow)));
 
 % hold on;
 % plot(expected_preamble)
