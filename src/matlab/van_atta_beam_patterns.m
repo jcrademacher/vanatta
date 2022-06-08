@@ -2,12 +2,12 @@ global params phimin phimax;
 %close all;
 params.d = 7e-2;
 params.c = 1500;
-params.f = 22e3;
+params.f = 18.5e3;
 params.N = 2;
 params.A = 10^(-40/20);
 params.r = 1;
 params.phi = 0;
-params.do_direction_val = 1;
+params.do_direction_val = 0;
 
 dmin = 1e-2;
 dmax = 20e-2;
