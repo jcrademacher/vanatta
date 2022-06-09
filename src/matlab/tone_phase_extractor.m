@@ -1,8 +1,8 @@
 folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Phase Tests 06-08-2022/';
-file = 'rx_phase_pab_007B_006A_007A_004A_*deg_2m_depth_2,5m_u2b';
+file = 'rx_phase_pab_007B_004A_*deg_2m_depth_3,5m_u2b';
 root = strcat(folder,file);
 
-node_list = ["007B","006A","007A","004A"];
+node_list = ["007B","007A"];
 
 fs = 2e5;
 Nsamps = 10*fs;
@@ -26,7 +26,7 @@ window = chebwin(t_window*fs);
 Nfft = length(window);
 i = 1;
 
-for ang=-45:45:45
+for ang=45
     exp_phase_diff = [0];
     act_phase_diff = [0];
 
