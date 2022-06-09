@@ -86,8 +86,8 @@ void send_from_file(
     }
 
     // send a mini EOB packet
-    metadata.end_of_burst = true;
-    tx_streamer->send("", 0, metadata);
+    md.end_of_burst = true;
+    tx_stream->send("", 0, md);
 
     // added to allow tx streamer to still read buffer before closing file
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -458,7 +458,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     if (spb == 0)
         spb = tx_stream->get_max_num_samps() * 10;
     std::vector<std::complex<float>> buff(spb);
-    int num_channels = tx_channel_nums.size();
+    // int num_channels = tx_channel_nums.size();
 
     // setup the metadata flags
     uhd::tx_metadata_t md;
