@@ -1,3 +1,4 @@
 cp ../src/c/* ../uhd/host/examples/
+cp ../CMakeLists.txt ../uhd/host/examples/
 cd ../uhd/host/build
 make
