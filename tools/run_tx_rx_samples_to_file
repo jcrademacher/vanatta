@@ -1,2 +1,8 @@
-ls
+cd ../rx_outputs/Sync\ Tests\ 06-09-2022
+../../uhd/host/build/examples/rx_tx_samples_to_file \
+    --tx-args "addr=192.168.10.6" --rx-args "addr=192.168.10.22" \
+    --tx-file "../../tx_outputs/tone_20k_600mVpp_1sec.dat" \
+    --rx-file "sync_test_loopback.dat" \
+    --nsamps 2000000 --tx-rate 200000 --rx-rate 200000 --settling 0
+
 
