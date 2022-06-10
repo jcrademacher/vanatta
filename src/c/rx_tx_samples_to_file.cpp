@@ -28,6 +28,7 @@ namespace po = boost::program_options;
  * Signal handlers
  **********************************************************************/
 static bool stop_signal_called = false;
+static bool start_signal_called = false;
 void sig_int_handler(int)
 {
     stop_signal_called = true;
@@ -58,41 +59,53 @@ std::string generate_out_filename(
  **********************************************************************/
 template <typename samp_type>
 void send_from_file(
-    uhd::tx_streamer::sptr tx_stream, const std::string& file, size_t samps_per_buff)
+    uhd::tx_streamer::sptr tx_stream, const std::string& file, size_t samps_per_buff, double settling_time)
 {
     uhd::tx_metadata_t md;
-    md.start_of_burst = false;
+    md.start_of_burst = true;
     md.end_of_burst   = false;
     std::vector<samp_type> buff(samps_per_buff);
     std::ifstream infile(file.c_str(), std::ifstream::binary);
 
     // loop until the entire file has been read
-
     while (not md.end_of_burst and not stop_signal_called) {
         infile.read((char*)&buff.front(), buff.size() * sizeof(samp_type));
         size_t num_tx_samps = size_t(infile.gcount() / sizeof(samp_type));
 
         md.end_of_burst = infile.eof();
 
+        // if(md.start_of_burst) {
+        //     md.has_time_spec = true;
+        //     md.time_spec = uhd::time_spec_t(settling_time);
+        //     std::cout << "Set settling time" << std::endl;
+        // }
+        // else {
+        //     md.has_time_spec = false;
+        // }
+        while(not start_signal_called) {} // wait for start signal
         const size_t samples_sent = tx_stream->send(&buff.front(), num_tx_samps, md);
 
-        std::cout << boost::format("Samples sent: %f") % samples_sent << std::endl;
+        //std::cout << boost::format("Samples sent: %f") % samples_sent << std::endl;
         if (samples_sent != num_tx_samps) {
             UHD_LOG_ERROR("TX-STREAM",
                 "The tx_stream timed out sending " << num_tx_samps << " samples ("
                                                    << samples_sent << " sent).");
             return;
         }
+
+        md.start_of_burst = false;
     }
 
     // send a mini EOB packet
     md.end_of_burst = true;
     tx_stream->send("", 0, md);
+    std::cout << "TX done!" << std::endl;
 
     // added to allow tx streamer to still read buffer before closing file
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     infile.close();
+    
 }
 
 
@@ -122,6 +135,9 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     // create a vector of pointers to point to each of the channel buffers
     std::vector<samp_type*> buff_ptrs;
     for (size_t i = 0; i < buffs.size(); i++) {
+        for (size_t x = 0; x < samps_per_buff; x++) {
+            buffs[i][x] = 0;
+        }
         buff_ptrs.push_back(&buffs[i].front());
     }
 
@@ -146,9 +162,10 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
                                      ? uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS
                                      : uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
     stream_cmd.num_samps  = num_requested_samples;
-    stream_cmd.stream_now = false;
-    stream_cmd.time_spec  = usrp->get_time_now() + uhd::time_spec_t(settling_time);
+    stream_cmd.stream_now = true;
+    //stream_cmd.time_spec  = uhd::time_spec_t(settling_time);
     rx_stream->issue_stream_cmd(stream_cmd);
+    start_signal_called = true;
 
     while (not stop_signal_called
            and (num_requested_samples > num_total_samps or num_requested_samples == 0)) {
@@ -537,7 +554,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     std::this_thread::sleep_for(std::chrono::seconds(1)); // wait for pps sync pulse
 
     // start transmit worker thread
-    void(*send_func)(uhd::tx_streamer::sptr, const std::string&, size_t);
+    void(*send_func)(uhd::tx_streamer::sptr, const std::string&, size_t, double);
 
     if (type == "double")
         send_func = &send_from_file<std::complex<double>>;
@@ -549,7 +566,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         throw std::runtime_error("Unknown type " + type);
 
     std::thread transmit_thread([&]() {
-        send_func(tx_stream, tx_file, spb);
+        send_func(tx_stream, tx_file, spb, settling);
     });
 
     // recv to file
