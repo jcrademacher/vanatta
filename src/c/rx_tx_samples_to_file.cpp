@@ -59,13 +59,19 @@ std::string generate_out_filename(
  **********************************************************************/
 template <typename samp_type>
 void send_from_file(
-    uhd::tx_streamer::sptr tx_stream, const std::string& file, size_t samps_per_buff, double settling_time)
+    uhd::usrp::multi_usrp::sptr usrp, 
+    uhd::tx_streamer::sptr tx_stream, 
+    const std::string& file, 
+    size_t samps_per_buff, 
+    uhd::time_spec_t time_spec)
 {
     uhd::tx_metadata_t md;
     md.start_of_burst = true;
     md.end_of_burst   = false;
-    std::vector<samp_type> buff(samps_per_buff);
+    std::vector<samp_type> buff(samps_per_buff,0);
     std::ifstream infile(file.c_str(), std::ifstream::binary);
+
+    tx_stream->send("", 0, md);
 
     // loop until the entire file has been read
     while (not md.end_of_burst and not stop_signal_called) {
@@ -74,15 +80,18 @@ void send_from_file(
 
         md.end_of_burst = infile.eof();
 
-        // if(md.start_of_burst) {
-        //     md.has_time_spec = true;
-        //     md.time_spec = uhd::time_spec_t(settling_time);
-        //     std::cout << "Set settling time" << std::endl;
-        // }
-        // else {
-        //     md.has_time_spec = false;
-        // }
-        while(not start_signal_called) {} // wait for start signal
+        if(md.start_of_burst) {
+            md.has_time_spec = true;
+            md.time_spec = time_spec;
+            std::cout << "Set settling time" << std::endl;
+
+            //usrp->set_command_time(uhd::time_spec_t(settling_time));
+        }
+        else {
+            md.has_time_spec = false;
+        }
+
+       // while(not start_signal_called) {} // wait for start signal
         const size_t samples_sent = tx_stream->send(&buff.front(), num_tx_samps, md);
 
         //std::cout << boost::format("Samples sent: %f") % samples_sent << std::endl;
@@ -119,8 +128,9 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     const std::string& file,
     size_t samps_per_buff,
     int num_requested_samples,
+    std::vector<size_t> rx_channel_nums,
     double settling_time,
-    std::vector<size_t> rx_channel_nums)
+    uhd::time_spec_t time_spec)
 {
     int num_total_samps = 0;
     // create a receive streamer
@@ -163,9 +173,9 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
                                      : uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
     stream_cmd.num_samps  = num_requested_samples;
     stream_cmd.stream_now = true;
-    //stream_cmd.time_spec  = uhd::time_spec_t(settling_time);
+    stream_cmd.time_spec  = time_spec;
     rx_stream->issue_stream_cmd(stream_cmd);
-    start_signal_called = true;
+    //start_signal_called = true;
 
     while (not stop_signal_called
            and (num_requested_samples > num_total_samps or num_requested_samples == 0)) {
@@ -473,8 +483,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
 
     // allocate a buffer which we re-use for each channel
     if (spb == 0)
-        spb = tx_stream->get_max_num_samps() * 10;
-    std::vector<std::complex<float>> buff(spb);
+        spb = tx_stream->get_max_num_samps();
+    //sstd::vector<std::complex<float>> buff(spb);
     // int num_channels = tx_channel_nums.size();
 
     // setup the metadata flags
@@ -551,10 +561,12 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     tx_usrp->set_time_source("external");
     rx_usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
     tx_usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
-    std::this_thread::sleep_for(std::chrono::seconds(1)); // wait for pps sync pulse
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // wait for pps sync pulse
+
+    uhd::time_spec_t time_spec = tx_usrp->get_time_now()+uhd::time_spec_t(settling);
 
     // start transmit worker thread
-    void(*send_func)(uhd::tx_streamer::sptr, const std::string&, size_t, double);
+    void(*send_func)(uhd::usrp::multi_usrp::sptr, uhd::tx_streamer::sptr, const std::string&, size_t, uhd::time_spec_t);
 
     if (type == "double")
         send_func = &send_from_file<std::complex<double>>;
@@ -566,19 +578,19 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         throw std::runtime_error("Unknown type " + type);
 
     std::thread transmit_thread([&]() {
-        send_func(tx_stream, tx_file, spb, settling);
+        send_func(tx_usrp, tx_stream, tx_file, spb, time_spec);
     });
 
     // recv to file
     if (type == "double")
         recv_to_file<std::complex<double>>(
-            rx_usrp, "fc64", otw, rx_file, spb, total_num_samps, settling, rx_channel_nums);
+            rx_usrp, "fc64", otw, rx_file, spb, total_num_samps, rx_channel_nums, settling, time_spec);
     else if (type == "float")
         recv_to_file<std::complex<float>>(
-            rx_usrp, "fc32", otw, rx_file, spb, total_num_samps, settling, rx_channel_nums);
+            rx_usrp, "fc32", otw, rx_file, spb, total_num_samps, rx_channel_nums, settling, time_spec);
     else if (type == "short")
         recv_to_file<std::complex<short>>(
-            rx_usrp, "sc16", otw, rx_file, spb, total_num_samps, settling, rx_channel_nums);
+            rx_usrp, "sc16", otw, rx_file, spb, total_num_samps, rx_channel_nums, settling, time_spec);
     else {
         // clean up transmit worker
         stop_signal_called = true;
