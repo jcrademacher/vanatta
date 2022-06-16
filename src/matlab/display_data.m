@@ -1,4 +1,4 @@
-sig = real(read_complex_binary('../../rx_outputs/rx_river_backscatter_u2b_vanatta_ind_+45deg_20kfc_1kHz_square_1m_depth_2m_dis_20cm_hphydro_0.dat'));
+sig = read_complex_binary('../../rx_outputs/River PAB Round Trip Phase Tests 06-15-2022/rx_round_trip_phase_pab_007B_ind_007B_006A_0deg_mosfet_18,5kfc_1k_square_2m_depth_1,2m_u2b_0,7m_hphydro.dat');
 
-periodogram(sig);
+plot(real(sig));
 

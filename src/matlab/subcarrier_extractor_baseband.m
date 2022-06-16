@@ -7,7 +7,7 @@ fb = 1e3;
 % generate low and highpass filters
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
-fsb1 = fb/100;
+fsb1 = fb/10;
 fpb1 = fb;
 dfac = 5;   % donwsampling factor
 
@@ -25,13 +25,15 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 05-26-2022/';
-file = 'rx_river_backscatter_pab14_ind_array_0deg_tmux_18,5kfc_1kHz_square_1m_depth_5,8m_dis_4,8m_hphydro';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-15-2022/';
+file = 'rx_round_trip_phase_pab_007B_ind_007B_006A_0deg_mosfet_18,5kfc_1kmod_2m_depth_1,2m_u2b_0,7m_hphydro.dat';
 root = strcat(folder,file);
 
 % initializes size
-sig = read_complex_binary(strcat(root,'_0.dat'));
+sig = read_complex_binary(strcat(root));
 %sig_synth = read_complex_binary(root_synth);
+
+sig = sig(24:end);
 
 rx_len = length(sig);
 % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
@@ -51,7 +53,7 @@ if Nel > 1
         rx_signals(2*fnum+2,:) = imag(sig(1:rx_len));
     end
 else
-    sig = read_complex_binary(strcat(root,'_0.dat'));
+    sig = read_complex_binary(strcat(root));
     rx_signals(1,:) = real(sig);
 end
 
@@ -102,7 +104,7 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     
     % lowpass filtering both removes the 2fc term and anti-alias filters
     % the signal to prepare for downsampling
-    rx_baseband_seg = fftfilt(lpFilt,rx_baseband_seg')';
+    rx_baseband_seg = filtfilt(lpFilt,rx_baseband_seg')';
     
     %expected_preamble = repelem(preamble,fm0_samp/2);
     
@@ -134,7 +136,7 @@ rx_baseband=downsample(rx_baseband',dfac)';
 fs = fs/dfac;   % change sampling rate to reflect downsampled data
 
 % highpass filter at lower sampling rate
-rx_baseband = fftfilt(hpFilt,rx_baseband')';
+rx_baseband = filtfilt(hpFilt,rx_baseband')';
 %expected_preamble = fftfilt(hpFilt,expected_preamble);
 
 t_window = 1;
@@ -145,7 +147,7 @@ Nfft = length(window);
 plot(f,10*log10(pxx));
 
 figure;
-plot(imag(rx_baseband));
+plot(real(rx_baseband));
 
 tot_pow = bandpower(rx_baseband);
 

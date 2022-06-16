@@ -296,12 +296,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     //           << std::endl;
     // uhd::usrp::multi_usrp::sptr rx_usrp = uhd::usrp::multi_usrp::make(rx_args);
 
-    // always select the subdevice first, the channel mapping affects the other settings
-    if (vm.count("tx-subdev"))
-        usrp->set_tx_subdev_spec(tx_subdev);
-    if (vm.count("rx-subdev"))
-        usrp->set_rx_subdev_spec(rx_subdev);
-
     // detect which channels to use
     std::vector<std::string> tx_channel_strings;
     std::vector<size_t> tx_channel_nums;
@@ -323,6 +317,12 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         } else
             rx_channel_nums.push_back(std::stoi(rx_channel_strings[ch]));
     }
+
+    // always select the subdevice first, the channel mapping affects the other settings
+    if (vm.count("tx-subdev"))
+        usrp->set_tx_subdev_spec(tx_subdev,tx_channel_nums[0]);
+    if (vm.count("rx-subdev"))
+        usrp->set_rx_subdev_spec(rx_subdev,rx_channel_nums[0]);
 
     // Lock mboard clocks
     if (vm.count("ref")) {

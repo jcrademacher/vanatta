@@ -1,9 +1,9 @@
-cd ../rx_outputs/Sync\ Tests\ 06-09-2022
+cd ../rx_outputs/River\ PAB\ Round\ Trip\ Phase\ Tests\ 06-16-2022
 ../../uhd/host/build/examples/rx_tx_samples_to_file \
-    --args "addr0=192.168.10.6, addr1=192.168.10.22" \
-    --tx-file "../../tx_outputs/tone_20k_600mVpp_1sec.dat" \
-    --rx-file "sync_test_loopback.dat" \
-    --nsamps 1000000 --tx-rate 200000 --rx-rate 200000 --settling 2 \
-    --tx-channels "0" --rx-channels "1" --spb 1000
+    --args "addr0=192.168.10.3, addr1=192.168.10.5" \
+    --tx-file "../../tx_outputs/tone_18,5kfc_600mVpp_1sec.dat" \
+    --rx-file "rx_round_trip_phase_pab_005A_ind_0deg_tmux_18,5kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_midpower_0.dat" \
+    --nsamps 2000000 --tx-rate 200000 --rx-rate 200000 --settling 2 \
+    --tx-channels "1" --rx-channels "0" --spb 1000
 
 
