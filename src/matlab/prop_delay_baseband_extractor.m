@@ -114,7 +114,7 @@ end
 
 % expected_preamble = filtfilt(lpFilt, expected_preamble);
 
-% downsample by 5
+% downsample by dfac
 rx_baseband=downsample(rx_baseband',dfac)';
 % expected_preamble = downsample(expected_preamble,dfac);
 fs = fs/dfac;   % change sampling rate to reflect downsampled data
