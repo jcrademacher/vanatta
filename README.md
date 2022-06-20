@@ -1,6 +1,6 @@
 # SK Piezoelectric Backscatter Van Atta
 
-The Van Atta is a specialized antenna array first created for the RF domain in 1955. It is a retrorefletive structure, in that it reflects an incoming wave back in the same direction that it came from. You can view the original patent [here](https://patents.google.com/patent/US2908002A/en).
+The Van Atta is a specialized antenna array first created for the RF domain in 1955. It is a retroreflective structure, in that it reflects an incoming wave back in the same direction that it came from. You can view the original patent [here](https://patents.google.com/patent/US2908002A/en).
 
 This project is an extension of the Van Atta array to piezoelectric devices in the underwater acoustic domain. The method is effectively the same, but there are unique challenges specific to piezoelectric devices, specifically maximum power transfer matching. Our group's derivations for far field beam patterns and maximum power transfer matching are given in [this document](https://drive.google.com/file/d/1DULdc8UHSOuENSTepJ27DRMAoALPb1Ii/view?usp=sharing).
 

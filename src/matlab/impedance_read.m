@@ -1,7 +1,7 @@
 node1 = readmatrix("../../impedance/PAB1_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
 node1 = node1(1:201,:);
 
-node2 = readmatrix("../../impedance/PAB4_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
+node2 = readmatrix("../../impedance/PAB3_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
 node2 = node2(1:201,:);
 
 % node3 = readmatrix("../../impedance/PAB4_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
