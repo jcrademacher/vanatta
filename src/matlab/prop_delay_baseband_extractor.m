@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
-file = 'rx_round_trip_phase_u2b_ind_0deg_mosfet_18,5kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_midpower_0.dat';
+folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
+file = 'rx_round_trip_phase_pab_007B_ind_007B_0deg_mosfet_18,5kfc_no_square_2m_depth_1,4m_u2b_0,7m_hphydro_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -82,7 +82,7 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     
     % generate the time series and local oscillator
     t = [(seg-1)*L/fs:1/fs:(seg_len+(seg-1)*L-1)/fs];
-    lo = exp(1j*(2*pi*carrier_freq*t-carrier_phase));
+    lo = cos(2*pi*carrier_freq*t-carrier_phase);
     % factor of 2 comes from cosine expansion
     rx_baseband_seg = 2*rx_segment.*lo;
     
@@ -139,14 +139,15 @@ figure(1);
 hold on;
 [pxx,f] = pwelch(sig_sec,window,[],Nfft,fs,'power');
 plot(f,10*log10(pxx));
+grid on;
+grid minor;
 
 % disp("Total Average Power (dB):");
 % disp(num2str(10*log10(tot_pow)));
 
 figure(2);
 hold on;
-plot(real(rx_baseband));
-plot(imag(rx_baseband));
+plot(real(sig_sec));
 
 disp("Subcarrier Phase (deg): ");
 disp(num2str(subcar_peak_phase/pi*180));
