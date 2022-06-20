@@ -11,8 +11,8 @@ fsb1 = fb/10;
 fpb1 = fb;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 9e3;
-fsb1_lp = 11e3;
+fpb1_lp = 7e3;
+fsb1_lp = 9e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -29,7 +29,7 @@ lpFilt = designfilt('lowpassfir' ...
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
 folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
-file = 'rx_round_trip_phase_pab_005A_ind_0deg_tmux_18,5kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_midpower_0.dat';
+file = 'rx_round_trip_phase_u2b_ind_0deg_mosfet_18,5kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_midpower_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -123,7 +123,7 @@ fs = fs/dfac;   % change sampling rate to reflect downsampled data
 rx_baseband = filtfilt(hpFilt,rx_baseband')';
 %expected_preamble = fftfilt(hpFilt,expected_preamble);
 
-sig_sec = rx_baseband(15e3/dfac+1:15e4/dfac);
+sig_sec = rx_baseband(1.5e5/dfac+1:1.9e5/dfac);
 Nfft = length(sig_sec);
 fft_sig = fft(sig_sec,Nfft);
 [subcar_peak,subcar_peak_index] = max(fft_sig(1:Nfft/2));
@@ -146,6 +146,7 @@ plot(f,10*log10(pxx));
 figure(2);
 hold on;
 plot(real(rx_baseband));
+plot(imag(rx_baseband));
 
 disp("Subcarrier Phase (deg): ");
 disp(num2str(subcar_peak_phase/pi*180));
