@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
-file = 'rx_round_trip_phase_pab_007B_ind_007B_0deg_mosfet_18,5kfc_no_square_2m_depth_1,4m_u2b_0,7m_hphydro_0.dat';
+folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 06-01-2022/';
+file = 'rx_river_backscatter_pab_007A_007B_ind_array_0deg_tmux_18,5kfc_1kHz_square_1m_depth_5,8m_dis_4,8m_hphydro_120sec_0.dat';
 root = strcat(folder,file);
 
 % initializes size
