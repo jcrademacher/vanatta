@@ -25,8 +25,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-15-2022/';
-file = 'rx_round_trip_phase_pab_007B_ind_007B_006A_0deg_mosfet_18,5kfc_1kmod_2m_depth_1,2m_u2b_0,7m_hphydro.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River Switch Van Atta Tests 06-20-2022/';
+file = 'rx_backscatter_vanatta_switch_TS5A_pab_003A_006A_ind_0deg_18,5kfc_1kmod_2m_depth_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -53,7 +53,7 @@ if Nel > 1
         rx_signals(2*fnum+2,:) = imag(sig(1:rx_len));
     end
 else
-    sig = read_complex_binary(strcat(root));
+%     sig = read_complex_binary(strcat(root));
     rx_signals(1,:) = real(sig);
 end
 
