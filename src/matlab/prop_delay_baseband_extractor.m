@@ -11,8 +11,8 @@ fsb1 = fb/10;
 fpb1 = fb;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 7e3;
-fsb1_lp = 9e3;
+fpb1_lp = 9e3;
+fsb1_lp = 11e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
-file = 'rx_round_trip_phase_pab_007B_ind_007B_0deg_mosfet_18,5kfc_no_square_2m_depth_1,4m_u2b_0,7m_hphydro_0.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River Switch Van Atta Tests 06-20-2022/';
+file = 'rx_backscatter_vanatta_switch_TS5A_pab_003A_006A_ind_0deg_18,5kfc_1kmod_2m_depth_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -82,13 +82,13 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     
     % generate the time series and local oscillator
     t = [(seg-1)*L/fs:1/fs:(seg_len+(seg-1)*L-1)/fs];
-    lo = cos(2*pi*carrier_freq*t-carrier_phase);
+    lo = exp(1j*(2*pi*carrier_freq*t-carrier_phase));
     % factor of 2 comes from cosine expansion
     rx_baseband_seg = 2*rx_segment.*lo;
     
     % lowpass filtering both removes the 2fc term and anti-alias filters
     % the signal to prepare for downsampling
-    rx_baseband_seg = filtfilt(lpFilt,rx_baseband_seg')';
+    rx_baseband_seg = fftfilt(lpFilt,rx_baseband_seg')';
     
     %expected_preamble = repelem(preamble,fm0_samp/2);
     
@@ -120,10 +120,10 @@ rx_baseband=downsample(rx_baseband',dfac)';
 fs = fs/dfac;   % change sampling rate to reflect downsampled data
 
 % highpass filter at lower sampling rate
-rx_baseband = filtfilt(hpFilt,rx_baseband')';
+rx_baseband = fftfilt(hpFilt,rx_baseband')';
 %expected_preamble = fftfilt(hpFilt,expected_preamble);
 
-sig_sec = rx_baseband(1.5e5/dfac+1:1.9e5/dfac);
+sig_sec = rx_baseband;
 Nfft = length(sig_sec);
 fft_sig = fft(sig_sec,Nfft);
 [subcar_peak,subcar_peak_index] = max(fft_sig(1:Nfft/2));

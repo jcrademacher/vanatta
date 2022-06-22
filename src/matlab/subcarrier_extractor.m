@@ -2,7 +2,7 @@ clear pxx;
 
 % place question mark where degree # should be
 folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River Switch Van Atta Tests 06-20-2022/';
-file = "rx_backscatter_vanatta_switch_TS5A_pab_003A_006A_ind_?deg_18,5kfc_1kmod_2m_depth";
+file = "rx_backscatter_vanatta_switch_NX5_pab_003A_006A_ind_?deg_18,5kfc_1kmod_2m_depth";
 root = strcat(folder,file);
 
 fmod = 1e3;
@@ -15,7 +15,7 @@ Ndeg = length(degree_list);
 measured_pattern = zeros(Ndeg,2);
 measured_pattern(:,1) = degree_list * pi/180;
 
-trial_length = fs*0.5;
+trial_length = fs*1;
 Ntrials = 2*floor(Nsamps/trial_length);
 
 avg_subcarrier_pow = zeros(Ntrials-1,Ndeg);
@@ -57,7 +57,7 @@ for i=1:Ntrials-1
 %     plot(f,pxx);
 end
 
-figure;
+figure(1);
 for n=1:Ndeg
     [cdf,x] = ecdf(10*log10(avg_subcarrier_pow(:,n)));
     hold on;
