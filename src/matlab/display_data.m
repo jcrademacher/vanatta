@@ -1,5 +1,6 @@
-sig = read_complex_binary('../../rx_outputs/River Switch Van Atta Tests 06-20-2022/rx_backscatter_vanatta_switch_TS5A_pab_003A_006A_ind_0deg_18,5kfc_1kmod_2m_depth_0.dat');
+sig = read_complex_binary('../../rx_outputs/River PAB Van Atta 06-23-2022/rx_backscatter_vanatta_007B_003A_purui_match_0deg_tmux_21,2kfc_1kmod_2m_depth_2m_u2b_1m_midpower_hphydro_diff_0.dat');
 
 plot(real(sig));
+figure;
 periodogram(real(sig));
 

@@ -1,7 +1,7 @@
 %%%% DESIGN PARAMETERS %%%%
 Nel = 1;
 fs = 2e5;               % USRP sampling rate (is changed throughout script due to downsampling)
-fc = 18.5e3;              % carrier frequency
+fc = 22e3;              % carrier frequency
 fb = 1e3;
 
 % generate low and highpass filters
@@ -11,8 +11,8 @@ fsb1 = fb/10;
 fpb1 = fb;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 9e3;
-fsb1_lp = 11e3;
+fpb1_lp = 8e3;
+fsb1_lp = 10e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River Switch Van Atta Tests 06-20-2022/';
-file = 'rx_backscatter_vanatta_switch_TS5A_pab_003A_006A_ind_0deg_18,5kfc_1kmod_2m_depth_0.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
+file = 'rx_round_trip_phase_u2b_ind_0deg_mosfet_22kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -63,7 +63,7 @@ carrier_freq = fs/Nfft*max_search(mindex)';
 % if you want to learn more about this method there is a section on it in
 % Discrete Time Signal Processing by Oppenheim & Schafer (Jack has book)
 
-L = 1e6;    % window length
+L = length(rx_signals);    % window length
 P = length(lpFilt.Coefficients);    % filter order (filter length)
 
 rx_baseband = zeros(Nel,rx_len+P-1);
@@ -112,6 +112,7 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     end
 end
 
+
 % expected_preamble = filtfilt(lpFilt, expected_preamble);
 
 % downsample by dfac
@@ -124,7 +125,7 @@ rx_baseband = fftfilt(hpFilt,rx_baseband')';
 %expected_preamble = fftfilt(hpFilt,expected_preamble);
 
 sig_sec = rx_baseband;
-Nfft = length(sig_sec);
+Nfft = 2^nextpow2(length(sig_sec));
 fft_sig = fft(sig_sec,Nfft);
 [subcar_peak,subcar_peak_index] = max(fft_sig(1:Nfft/2));
 subcar_peak_f = subcar_peak_index/Nfft*fs;
@@ -148,6 +149,7 @@ grid minor;
 figure(2);
 hold on;
 plot(real(sig_sec));
+plot(imag(sig_sec));
 
 disp("Subcarrier Phase (deg): ");
 disp(num2str(subcar_peak_phase/pi*180));
