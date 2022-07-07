@@ -8,28 +8,28 @@ fb = 1e3;
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
 fsb1 = fb/100;
-fpb1 = fb/4;
-dfac = 5;   % donwsampling factor
+fpb1 = fb;
+dfac = 1;   % donwsampling factor
 
 fpb1_lp = 8e3;
 fsb1_lp = 10e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
-                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',40,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
+                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 % lowpass after downconversion, before downsampling
 lpFilt = designfilt('lowpassfir' ...
                     ,'PassbandFrequency',fpb1_lp*2/fs...
                     ,'StopbandFrequency',fsb1_lp*2/fs,'StopbandAttenuation' ...
-                    ,80,'PassbandRipple',0.1);
+                    ,80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 %%%% END DESIGN PARAMETERS %%%%
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/SMAST Tests 06-24-2022/';
-file = 'rx_u2b_tx_backscatter_pab_003A_18,5kfc_1kmod_3m_depth_200cm_distance_0.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 07-07-2022/';
+file = 'rx_vanatta_pab_007B_005A_ind_-45deg_tmux_18,5kfc_1kmod_siggen_3m_depth_3m_u2b_2m_hphydro_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -127,19 +127,19 @@ rx_baseband = fftfilt(hpFilt,rx_baseband')';
 sig_sec = rx_baseband;
 Nfft = 2^nextpow2(length(sig_sec));
 fft_sig = fft(sig_sec,Nfft);
-[subcar_peak,subcar_peak_index] = max(fft_sig(1:Nfft/2));
+[subcar_peak,subcar_peak_index] = max(fft_sig);
 subcar_peak_f = subcar_peak_index/Nfft*fs;
 subcar_peak_phase = angle(subcar_peak);
 f = [-fs/2:fs/Nfft:fs/2-fs/Nfft];
 
 t_window = 0.1;
 window = chebwin(t_window*fs);
-Nfft = length(window);
+%Nfft = length(window);
 
 figure(1);
 hold on;
-[pxx,f] = pwelch(sig_sec,window,[],Nfft,fs,'power');
-plot(f,10*log10(pxx));
+%[pxx,f] = pwelch(sig_sec,window,[],Nfft,fs,'power');
+plot(f,20*log10(abs(fftshift(fft_sig))));
 grid on;
 grid minor;
 

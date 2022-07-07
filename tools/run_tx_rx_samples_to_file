@@ -1,8 +1,8 @@
-cd ../rx_outputs/SMAST\ Tests\ 06-24-2022
+cd ../rx_outputs/River\ PAB\ Van\ Atta\ 07-07-2022
 ../../uhd/host/build/examples/rx_tx_samples_to_file \
     --args "addr0=192.168.10.3, addr1=192.168.10.5" \
-    --tx-file "../../tx_outputs/tone_18,5kfc_600mVpp_10sec.dat" \
-    --rx-file "rx_test.dat" \
+    --tx-file "../../tx_outputs/combo_data_1000mod_800mVpp_1000mod_800mVpp_1sec.dat" \
+    --rx-file "rx_vanatta_pab_007B_005A_ind_-45deg_tmux_18,5kfc_1kmod_siggen_3m_depth_3m_u2b_2m_hphydro_0.dat" \
     --nsamps 200000 --tx-rate 200000 --rx-rate 200000 --settling 5 \
     --tx-channels "1" --rx-channels "0"
 
