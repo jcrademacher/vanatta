@@ -1,22 +1,22 @@
 %%%% DESIGN PARAMETERS %%%%
 Nel = 1;
 fs = 2e5;               % USRP sampling rate (is changed throughout script due to downsampling)
-fc = 22e3;              % carrier frequency
+fc = 18.5e3;              % carrier frequency
 fb = 1e3;
 
 % generate low and highpass filters
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
-fsb1 = fb/10;
-fpb1 = fb;
-dfac = 1;   % donwsampling factor
+fsb1 = fb/100;
+fpb1 = fb/4;
+dfac = 5;   % donwsampling factor
 
 fpb1_lp = 8e3;
 fsb1_lp = 10e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
-                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',40,'PassbandRipple',0.1);
+                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',40,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 % lowpass after downconversion, before downsampling
 lpFilt = designfilt('lowpassfir' ...
@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
-file = 'rx_round_trip_phase_u2b_ind_0deg_mosfet_22kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_0.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/SMAST Tests 06-24-2022/';
+file = 'rx_u2b_tx_backscatter_pab_003A_18,5kfc_1kmod_3m_depth_200cm_distance_0.dat';
 root = strcat(folder,file);
 
 % initializes size
