@@ -11,8 +11,8 @@ fsb1 = fb/100;
 fpb1 = fb;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 8e3;
-fsb1_lp = 10e3;
+fpb1_lp = 7e3;
+fsb1_lp = 9e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -63,10 +63,8 @@ carrier_freq = fs/Nfft*max_search(mindex)';
 % if you want to learn more about this method there is a section on it in
 % Discrete Time Signal Processing by Oppenheim & Schafer (Jack has book)
 
-L = length(rx_signals);    % window length
+L = 1e6;    % window length
 P = length(lpFilt.Coefficients);    % filter order (filter length)
-
-rx_baseband = zeros(Nel,rx_len+P-1);
 
 % inside for loop rx_signals is multiplied by a local oscillator and then
 % fft-filtered by lowpass generated in design parameters section 
@@ -87,7 +85,8 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     rx_baseband_seg = 2*rx_segment.*lo;
     
     % lowpass filtering both removes the 2fc term and anti-alias filters
-    % the signal to prepare for downsampling
+    % the signal to prepare for downplot(imag(sig_sec));
+
     rx_baseband_seg = fftfilt(lpFilt,rx_baseband_seg')';
     
     %expected_preamble = repelem(preamble,fm0_samp/2);
