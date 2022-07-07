@@ -7,8 +7,8 @@ fb = 1e3;
 % generate low and highpass filters
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
-fsb1 = fb/10;
-fpb1 = fb;
+fsb1 = fb/100;
+fpb1 = fb/4;
 dfac = 5;   % donwsampling factor
 
 fpb1_lp = 7e3;
@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 06-01-2022/';
-file = 'rx_river_backscatter_pab_007A_007B_ind_vanatta_0deg_tmux_18,5kfc_1kHz_square_1m_depth_5,8m_dis_4,8m_hphydro_120sec_0.dat';
+folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/SMAST Tests 06-24-2022/';
+file = 'rx_u2b_tx_backscatter_pab_003A_18,5kfc_1kmod_3m_depth_200cm_distance_0.dat';
 root = strcat(folder,file);
 
 % initializes size

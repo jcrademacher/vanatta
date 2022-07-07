@@ -1,9 +1,9 @@
-cd ../rx_outputs/River\ PAB\ Round\ Trip\ Phase\ Tests\ 06-17-2022
+cd ../rx_outputs/SMAST\ Tests\ 06-24-2022
 ../../uhd/host/build/examples/rx_tx_samples_to_file \
     --args "addr0=192.168.10.3, addr1=192.168.10.5" \
-    --tx-file "../../tx_outputs/combo_tone_18,5kfc_600mVpp_square_1k_1Vpp_1sec.dat" \
-    --rx-file "rx_round_trip_phase_rotator_pab_006A_ind_003A_006A_30deg_tmux_18,5kfc_1kmod_usrp_lvshft_2m_depth_1,4m_u2b_0,7m_hphydro_midpower_adj_2.dat" \
-    --nsamps 2000000 --tx-rate 200000 --rx-rate 200000 --settling 2 \
-    --tx-channels "1" --rx-channels "0" --spb 1000
+    --tx-file "../../tx_outputs/tone_18,5kfc_600mVpp_10sec.dat" \
+    --rx-file "rx_test.dat" \
+    --nsamps 200000 --tx-rate 200000 --rx-rate 200000 --settling 5 \
+    --tx-channels "1" --rx-channels "0"
 
 
