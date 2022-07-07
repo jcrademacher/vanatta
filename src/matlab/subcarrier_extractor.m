@@ -1,13 +1,13 @@
 clear pxx;
 
 % place question mark where degree # should be
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River Switch Van Atta Tests 06-20-2022/';
-file = "rx_backscatter_vanatta_switch_NX5_pab_003A_006A_ind_?deg_18,5kfc_1kmod_2m_depth";
+folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 06-23-2022/';
+file = "rx_backscatter_array_007B_003A_purui_match_0deg_tmux_21,2kfc_1kmod_2m_depth_2m_u2b_1m_midpower_hphydro_diff";
 root = strcat(folder,file);
 
 fmod = 1e3;
 fs = 2e5;
-Nsamps = 60*fs;
+Nsamps = 10*fs;
 
 degree_list = [0];
 Ndeg = length(degree_list);
@@ -15,7 +15,7 @@ Ndeg = length(degree_list);
 measured_pattern = zeros(Ndeg,2);
 measured_pattern(:,1) = degree_list * pi/180;
 
-trial_length = fs*1;
+trial_length = fs*0.1;
 Ntrials = 2*floor(Nsamps/trial_length);
 
 avg_subcarrier_pow = zeros(Ntrials-1,Ndeg);

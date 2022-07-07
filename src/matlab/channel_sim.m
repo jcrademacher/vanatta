@@ -12,10 +12,10 @@ lpFilt = designfilt('lowpassfir' ...
                     ,80,'PassbandRipple',0.1);
 
 m = 0.1;
-t_len = 10;
+t_len = 1;
 t = [0:1/fs:t_len-1/fs];
 
-data = square(2*pi*fb*t);
+data = square(2*pi*fb*t,40);
 carrier = cos(2*pi*fc*t);
 
 pb_sig = (1+m*data).*carrier;
@@ -35,5 +35,13 @@ ylim([-2 2]);
 subplot(2,1,2);
 plot(downconv_out);
 
+t_window = 0.1;
+window = chebwin(t_window*fs);
+Nfft = 2^nextpow2(length(window));
+
 figure;
-periodogram(downconv_out);
+hold on;
+[pxx,f] = pwelch(data,window,[],Nfft,fs,'power');
+plot(f,10*log10(pxx));
+grid on;
+grid minor;

@@ -1,7 +1,7 @@
 %%%% DESIGN PARAMETERS %%%%
 Nel = 1;
 fs = 2e5;               % USRP sampling rate (is changed throughout script due to downsampling)
-fc = 22e3;              % carrier frequency
+fc = 18.5e3;              % carrier frequency
 fb = 1e3;
 
 % generate low and highpass filters
@@ -9,14 +9,14 @@ fb = 1e3;
 % highpass is performed after downsampling as it is a higher order filter
 fsb1 = fb/10;
 fpb1 = fb;
-dfac = 1;   % donwsampling factor
+dfac = 5;   % donwsampling factor
 
-fpb1_lp = 8e3;
-fsb1_lp = 10e3;
+fpb1_lp = 7e3;
+fsb1_lp = 9e3;
 
 % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
-                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',40,'PassbandRipple',0.1);
+                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',40,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 % lowpass after downconversion, before downsampling
 lpFilt = designfilt('lowpassfir' ...
@@ -28,8 +28,8 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Round Trip Phase Tests 06-16-2022/';
-file = 'rx_round_trip_phase_u2b_ind_0deg_mosfet_22kfc_1k_square_siggen_2m_depth_1,4m_u2b_0,7m_hphydro_0.dat';
+folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 06-01-2022/';
+file = 'rx_river_backscatter_pab_007A_007B_ind_vanatta_0deg_tmux_18,5kfc_1kHz_square_1m_depth_5,8m_dis_4,8m_hphydro_120sec_0.dat';
 root = strcat(folder,file);
 
 % initializes size
@@ -63,10 +63,8 @@ carrier_freq = fs/Nfft*max_search(mindex)';
 % if you want to learn more about this method there is a section on it in
 % Discrete Time Signal Processing by Oppenheim & Schafer (Jack has book)
 
-L = length(rx_signals);    % window length
+L = 1e6;    % window length
 P = length(lpFilt.Coefficients);    % filter order (filter length)
-
-rx_baseband = zeros(Nel,rx_len+P-1);
 
 % inside for loop rx_signals is multiplied by a local oscillator and then
 % fft-filtered by lowpass generated in design parameters section 
@@ -87,7 +85,8 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     rx_baseband_seg = 2*rx_segment.*lo;
     
     % lowpass filtering both removes the 2fc term and anti-alias filters
-    % the signal to prepare for downsampling
+    % the signal to prepare for downplot(imag(sig_sec));
+
     rx_baseband_seg = fftfilt(lpFilt,rx_baseband_seg')';
     
     %expected_preamble = repelem(preamble,fm0_samp/2);
