@@ -4,3 +4,4 @@
 impedance/*
 .DS_Store
 .vscode
+*.mat
