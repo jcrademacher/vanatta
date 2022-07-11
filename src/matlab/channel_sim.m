@@ -15,7 +15,7 @@ m = 0.1;
 t_len = 1;
 t = [0:1/fs:t_len-1/fs];
 
-data = square(2*pi*fb*t,40);
+data = square(2*pi*fb*t);
 carrier = cos(2*pi*fc*t);
 
 pb_sig = (1+m*data).*carrier;
@@ -23,12 +23,15 @@ pb_sig = pb_sig';
 
 load 3m_pb_ch.mat;
 channel = ch_pb2;
+figure;
+periodogram(channel);
 
 out = conv(pb_sig,channel);
 
 t_out = [0:1/fs:length(out)/fs-1/fs];
 downconv_out = fftfilt(lpFilt, cos(2*pi*fc*t_out)'.*out);
 
+figure;
 subplot(2,1,1);
 plot(pb_sig);
 ylim([-2 2]);

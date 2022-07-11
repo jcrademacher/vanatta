@@ -28,7 +28,7 @@ lpFilt = designfilt('lowpassfir' ...
 
 % the root of the filename of the rx data. Remove the ending _0 _1 _2 from
 % filename and place here
-folder = '~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 07-07-2022/';
+folder = '~/Documents/sk/oceans/vanatta/rx_outputs/River PAB Van Atta 07-07-2022/';
 file = 'rx_vanatta_pab_007B_005A_ind_0deg_tmux_18,5kfc_1kmod_siggen_3m_depth_3m_u2b_2m_hphydro_0.dat';
 root = strcat(folder,file);
 
