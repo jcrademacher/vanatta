@@ -1,14 +1,14 @@
 %%%% DESIGN PARAMETERS %%%%
 Nel = 1;
 fs = 2e5;               % USRP sampling rate (is changed throughout script due to downsampling)
-fc = 18.5e3;              % carrier frequency
+fc = 20e3;              % carrier frequency
 fb = 1e3;
 
 % generate low and highpass filters
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
 fsb1 = fb/100;
-fpb1 = fb;
+fpb1 = fb/4;
 dfac = 1;   % donwsampling factor
 
 fpb1_lp = 7e3;
@@ -37,6 +37,7 @@ sig = read_complex_binary(strcat(root));
 %sig_synth = read_complex_binary(root_synth);
 
 sig = sig(24:end);
+sig = yr;
 
 rx_len = length(sig);
 % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
@@ -80,7 +81,7 @@ for seg = 1:ceil(length(rx_signals(1,:))/L)
     
     % generate the time series and local oscillator
     t = [(seg-1)*L/fs:1/fs:(seg_len+(seg-1)*L-1)/fs];
-    lo = exp(1j*(2*pi*carrier_freq*t-carrier_phase));
+    lo = exp(1j*(2*pi*carrier_freq*t));
     % factor of 2 comes from cosine expansion
     rx_baseband_seg = 2*rx_segment.*lo;
     
