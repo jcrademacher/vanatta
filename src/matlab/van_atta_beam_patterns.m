@@ -27,7 +27,7 @@ max_r_db = -30;
 Ntheta = 1000;
 theta = linspace(phimin,phimax,Ntheta); 
 
-f = figure(1);
+f = figure(2);
 ax = axes('Parent',f,'position',[0.13 0.39 0.77 0.54]);
 %subplot(1,3,3);
 pol = polarplot(theta,atot_db);

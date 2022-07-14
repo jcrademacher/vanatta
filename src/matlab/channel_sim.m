@@ -1,24 +1,39 @@
 fs = 2e5;
-fc = 20e3;
+fc = 18.5e3;
 fb = 1e3;
-c = 1440;
+c = 1500;
 wc = 2*pi*fc;
+
+%theta = 0; % array rotation
+if theta > 90
+    return
+end
+
+ds = 0.07; % element spacing
+delta_d = ds*sin(theta/180*pi);
 
 dd = 3;
 du = 2;
-d0 = dd-du;
+
+dd1 = dd+delta_d/2;
+dd2 = dd-delta_d/2;
+
+du1 = du+delta_d/2;
+du2 = du-delta_d/2;
+
+d0 = 1;
 
 % A0 is direct path mag, Ad is downlink path mag, Au is uplink path mag
 A0 = 0.9;
 Ad = 0.1;
-Au = 0.2;
+Au = 0.15;
 
 tau_0 = d0 / c;
-tau_d = dd / c;
-tau_u = du / c;
+tau_d1 = dd1 / c;
+tau_d2 = dd2 / c;
 
-fpb1_lp = 7e3;
-fsb1_lp = 9e3;
+tau_u1 = du1 / c;
+tau_u2 = du2 / c;
 
 Nel = 1;
 
@@ -37,20 +52,21 @@ t = [0:1/fs:t_len-1/fs];
 %plot(t,data(t-0.1,fb,1));
 n_data_reps1 = 5;
 n_data_reps2 = 5;
-data1 = data(t-tau_u,preamble1,fb,n_data_reps1);
-data2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+1e-3)-tau_u,preamble2,fb,n_data_reps2);
+data1 = data(t-tau_u1,preamble1,fb,n_data_reps1);
+data2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+1e-3)-tau_u2,preamble2,fb,n_data_reps2);
 
-data_comb_part1 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u,...
+data_comb_part1 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u1,...
                     preamble1,fb,n_data_reps1);
-data_comb_part2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u,...
+data_comb_part2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u2,...
                     preamble2,fb,n_data_reps2);
 
-data_comb = data_comb_part1+data_comb_part2;
+%data_comb = data_comb_part1+data_comb_part2;
 
-yr = A0*cos(wc*(t-tau_0)).*heaviside(t-tau_0) + ... 
-        Ad*Au*data1.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
-        Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
-        Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
+yr = A0*cos(wc*(t-tau_0)).*heaviside(t-tau_0) + ...
+        Ad*Au*data1.*cos(wc*(t-tau_d1-tau_u1)).*heaviside(t-tau_d1-tau_u1) + ...
+        Ad*Au*data2.*cos(wc*(t-tau_d2-tau_u2)).*heaviside(t-tau_d2-tau_u2) + ...
+        Ad*Au*data_comb_part1.*cos(wc*(t-tau_d1-tau_u1)).*heaviside(t-tau_d1-tau_u1) + ...
+        Ad*Au*data_comb_part2.*cos(wc*(t-tau_d2-tau_u2)).*heaviside(t-tau_d2-tau_u2);
 %plot(t,yr);
 % carrier = 0;
 % pb_sig = (1+m*data).*carrier;
@@ -91,8 +107,8 @@ fsb1 = fb/100;
 fpb1 = fb/4;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 7e3;
-fsb1_lp = 9e3;
+fpb1_lp = 18e3;
+fsb1_lp = 20e3;
 
 % % highpass for after downsampling
 % hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -159,20 +175,23 @@ t_window = 0.1;
 window = chebwin(t_window*fs);
 %Nfft = length(window);
 
-figure(1);
-hold on;
-%[pxx,f] = pwelch(sig_sec,window,[],Nfft,fs,'power');
-plot(f,20*log10(abs(fftshift(fft_sig))));
-grid on;
-grid minor;
+% figure(1);
+% hold on;
+% %[pxx,f] = pwelch(sig_sec,window,[],Nfft,fs,'power');
+% plot(f,20*log10(abs(fftshift(fft_sig))));
+% grid on;
+% grid minor;
 
 % disp("Total Average Power (dB):");
 % disp(num2str(10*log10(tot_pow)));
 
-figure(2);
-hold on;
-plot(real(sig_sec));
-plot(imag(sig_sec));
+% figure(2);
+% clf;
+% hold on;
+% plot(real(sig_sec(1:24000)));
+% plot(imag(sig_sec(1:24000)));
+
+ylim([-0.05 0.05]);
 
 %% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
 
@@ -219,7 +238,7 @@ decode_preamble1 = expected_preamble1-mean(expected_preamble1);
 decode_preamble2 = expected_preamble2-mean(expected_preamble2);
 decode_preamble_comb = expected_preamble_comb-mean(expected_preamble_comb);
 
-figure;
+% figure;
 % CORRELATION AND DECODING %
 for pnum=1:N_packets1+N_packets2+N_comb_packets
     for el=1:Nel
@@ -253,12 +272,12 @@ for pnum=1:N_packets1+N_packets2+N_comb_packets
         % find maximum correlation and begin decoding from there
         [preamble_max,preamble_starts(el)] = max(abs_corr); 
 
-        clf;
-        
-        plot(abs_corr/30);
-        hold on;
-        plot(real(rx_baseband(el,begdex:endex)));
-        plot([zeros(1,preamble_starts(el)) decode_preamble/10]);
+%         clf;
+%         
+%         plot(abs_corr/30);
+%         hold on;
+%         plot(real(rx_baseband(el,begdex:endex)));
+%         plot([zeros(1,preamble_starts(el)) decode_preamble/10]);
         %xlim([0 1000]);
 
         % slice out packet found from correlation
@@ -323,23 +342,27 @@ for pnum=1:N_packets1+N_packets2+N_comb_packets
 end
 
 mag_percent_error = abs(A_hat - Au*Ad) / (Au*Ad) * 100;
-ang_percent_error = abs(ang_hat - angle(exp(1j*2*pi*fc*(tau_u+tau_d)))) / angle(exp(1j*2*pi*fc*(tau_u+tau_d))) * 100;
+ang_percent_error = abs(ang_hat - angle(exp(1j*2*pi*fc*(tau_u1+tau_d1)))) / angle(exp(1j*2*pi*fc*(tau_u1+tau_d1))) * 100;
 
+channel_mags_theta = [channel_mags_theta mean(A_hat(N_packets1+N_packets2+1:end))];
 
 %% EXPORT DATA %%
-data_ch1 = data(t,preamble1,fb,n_data_reps1);
-data_ch2 = data(t-length(expected_preamble1)*n_data_reps1/fs-1e-3,preamble2,fb,n_data_reps2);
+% data_ch1 = data(t,preamble1,fb,n_data_reps1);
+% data_ch2 = data(t-length(expected_preamble1)*n_data_reps1/fs-1e-3,preamble2,fb,n_data_reps2);
+% 
+% data_comb = data(t-(length(expected_preamble1)*n_data_reps1+length(expected_preamble2)*n_data_reps2)/fs-2e-3,preamble2,fb,n_data_reps2);
+% 
+% data_tot = (data_ch1+data_comb+1)/2.5+1j*(data_ch2+data_comb+1)/2.5;
+% 
+% figure;
+% hold on;
+% plot(real(data_tot));
+% %plot(imag(data_tot));
+% 
+% write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
 
-data_comb = data(t-(length(expected_preamble1)*n_data_reps1+length(expected_preamble2)*n_data_reps2)/fs-2e-3,preamble2,fb,n_data_reps2);
-
-data_tot = (data_ch1+data_comb+1)/2.5+1j*(data_ch2+data_comb+1)/2.5;
-
-figure;
-hold on;
-plot(real(data_tot));
-%plot(imag(data_tot));
-
-write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
+theta = theta + 1;
+channel_sim;
 
 function out = data(t,code,fb,nreps)
     fm0_code = generate_fm0_sig2(code,2);

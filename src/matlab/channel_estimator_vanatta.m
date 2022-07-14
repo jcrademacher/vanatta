@@ -1,7 +1,7 @@
 fs = 2e5;
 fc = 18.5e3;
 fb = 500;
-c = 1440;
+c = 1500;
 wc = 2*pi*fc;
 
 dd = 3;
@@ -52,7 +52,7 @@ data_comb = data_comb_part1+data_comb_part2;
         Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
         Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
 
-yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-13-2022/rx_array_chest_pab_005A_007B_ind_-60deg_tmux_18,5kfc_siggen_data_500bps_usrp_3m_depth_3m_u2b_2m_hphydro_1.dat');        
+yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-13-2022/rx_array_chest_pab_005A_007B_ind_+30deg_tmux_18,5kfc_siggen_data_500bps_usrp_3m_depth_3m_u2b_2m_hphydro_0.dat');        
 %plot(t,yr);
 % carrier = 0;
 % pb_sig = (1+m*data).*carrier;
@@ -90,10 +90,10 @@ yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-13-2022
 % lowpass is performed before downsampling as an anti-aliasing filter
 % highpass is performed after downsampling as it is a higher order filter
 fsb1 = fb/100;
-fpb1 = fb/4;
+fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 7e3;
+fpb1_lp = 5e3;
 fsb1_lp = 9e3;
 
 % % highpass for after downsampling
@@ -137,17 +137,26 @@ rx_baseband = rx_signals.*lo;
 % slice out where data starts
 %rx_baseband = rx_baseband(1500:end);
 
+[gdlp,w] = grpdelay(lpFilt);
+gdlp = mean(gdlp);
+
+[gdhp,w] = grpdelay(hpFilt);
+gdhp = mean(gdhp);
+
 % lowpass filtering both removes the 2fc term and anti-alias filters
 % filtfilt used for 0 group delay filtering
 rx_baseband = fftfilt(lpFilt,rx_baseband')';
+rx_baseband = rx_baseband(gdlp+1:end);
+
 expected_preamble1 = filtfilt(lpFilt,expected_preamble1')';
 expected_preamble2 = filtfilt(lpFilt,expected_preamble2')';
 expected_preamble_comb = filtfilt(lpFilt,expected_preamble_comb')';
 
 % remove DC mean
-%rx_baseband = rx_baseband - mean(rx_baseband);
+% rx_baseband = rx_baseband - mean(rx_baseband);
 rx_baseband = fftfilt(hpFilt,rx_baseband')';
-% expected_preamble = filtfilt(hpFilt,expected_preamble);
+rx_baseband = rx_baseband(gdhp+1:end);
+%expected_preamble1 = fftfilt(hpFilt,expected_preamble1);
 
 sig_sec = rx_baseband;
 Nfft = 2^nextpow2(length(sig_sec));
@@ -177,7 +186,7 @@ plot(real(sig_sec));
 subplot(2,1,2);
 plot(imag(sig_sec));
 
-rx_baseband = rx_baseband(7000:end);
+%rx_baseband = rx_baseband(7000:end);
 
 %% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
 
@@ -206,7 +215,7 @@ packet_len = preamble_len1;                 % known packet length in samples
 % usually this needs to be set slightly lower than the total that was
 % actually transmitted, I haven't investigated this further and am not sure
 % why this is needed
-N_packets1 = 4;
+N_packets1 = 5;
 N_packets2 = 5;
 N_comb_packets = 5;
 
@@ -343,6 +352,9 @@ plot(comb_ch_est,'o','linewidth',8);
 angle(n1_ch_est)/pi*180
 angle(n2_ch_est)/pi*180
 angle(comb_ch_est)/pi*180
+
+% (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
+
 %% EXPORT DATA %%
 data_ch1 = data(t,preamble1,fb,n_data_reps1);
 data_ch2 = data(t-length(expected_preamble1)*n_data_reps1/fs-1e-3,preamble2,fb,n_data_reps2);
