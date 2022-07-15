@@ -215,6 +215,7 @@ packet_len = preamble_len1;                 % known packet length in samples
 % usually this needs to be set slightly lower than the total that was
 % actually transmitted, I haven't investigated this further and am not sure
 % why this is needed
+N_trials = 2;
 N_packets1 = 5;
 N_packets2 = 5;
 N_comb_packets = 5;
@@ -222,10 +223,10 @@ N_comb_packets = 5;
 % % estimates after channel projection for individual elements
 % rx_rep_estimates = zeros(Nel,N_packets*(packet_len-preamble_len1));
 
-channel_estimates = zeros(Nel,N_packets1+N_packets2+N_comb_packets);
+channel_estimates = zeros(Nel,N_trials*(N_packets1+N_packets2+N_comb_packets));
 
-A_hat = zeros(Nel,N_packets1+N_packets2+N_comb_packets);
-ang_hat = zeros(Nel,N_packets1+N_packets2+N_comb_packets);
+A_hat = zeros(Nel,N_trials*(N_packets1+N_packets2+N_comb_packets));
+ang_hat = zeros(Nel,N_trials*(N_packets1+N_packets2+N_comb_packets));
 
 preamble_starts = zeros(Nel,1);
 
@@ -235,7 +236,7 @@ decode_preamble_comb = expected_preamble_comb-mean(expected_preamble_comb);
 
 figure;
 % CORRELATION AND DECODING %
-for pnum=1:N_packets1+N_packets2+N_comb_packets
+for pnum=1:N_trials*(N_packets1+N_packets2+N_comb_packets)
     for el=1:Nel
         begdex = (pnum-1)*packet_len+1;
         endex = pnum*packet_len;
@@ -247,10 +248,9 @@ for pnum=1:N_packets1+N_packets2+N_comb_packets
 %         beg_bit_dex = (pnum-1)*N_data_bits+1;
 %         end_bit_dex = pnum*N_data_bits;
         
-        % perform cross correlation for packet start
-        if pnum <= N_packets1
+        if pnum <= N_packets1 || (pnum > N_packets1+N_packets2+N_comb_packets && pnum <= 2*N_packets1+N_packets2+N_comb_packets)
             decode_preamble = decode_preamble1;
-        elseif pnum <= N_packets1+N_packets2
+        elseif pnum <= N_packets1+N_packets2 || (pnum > 2*N_packets1+N_packets2+N_comb_packets && pnum <= 2*N_packets1+2*N_packets2+N_comb_packets)
             decode_preamble = decode_preamble2;
         else
             decode_preamble = decode_preamble_comb;
@@ -258,7 +258,8 @@ for pnum=1:N_packets1+N_packets2+N_comb_packets
         
         % tx norm is length of preamble for binary keying (-1,+1)
         tx_norm = sum(abs(decode_preamble).^2);
-
+        
+        % perform cross correlation for packet start
         [rcorr,rlags] = xcorr(real(rx_baseband(el,begdex:end_preamble_dex))',decode_preamble');
         [icorr,ilags] = xcorr(imag(rx_baseband(el,begdex:end_preamble_dex))',decode_preamble');
         % removes tails of correlation 
