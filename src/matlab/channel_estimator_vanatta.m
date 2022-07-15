@@ -35,22 +35,22 @@ t_len = 1;
 t = [0:1/fs:t_len-1/fs];
 
 %plot(t,data(t-0.1,fb,1));
-n_data_reps1 = 5;
-n_data_reps2 = 5;
-data1 = data(t-tau_u,preamble1,fb,n_data_reps1);
-data2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+1e-3)-tau_u,preamble2,fb,n_data_reps2);
-
-data_comb_part1 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u,...
-                    preamble1,fb,n_data_reps1);
-data_comb_part2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u,...
-                    preamble2,fb,n_data_reps2);
-
-data_comb = data_comb_part1+data_comb_part2;
-
-%yr = A0*cos(wc*(t-tau_0)).*heaviside(t-tau_0) + ... 
-        Ad*Au*data1.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
-        Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
-        Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
+% n_data_reps1 = 5;
+% n_data_reps2 = 5;
+% data1 = data(t-tau_u,preamble1,fb,n_data_reps1);
+% data2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+1e-3)-tau_u,preamble2,fb,n_data_reps2);
+% 
+% data_comb_part1 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u,...
+%                     preamble1,fb,n_data_reps1);
+% data_comb_part2 = data(t-(length(expected_preamble1)*n_data_reps1/fs+length(expected_preamble2)*n_data_reps2/fs+2e-3)-tau_u,...
+%                     preamble2,fb,n_data_reps2);
+% 
+% data_comb = data_comb_part1+data_comb_part2;
+% 
+% %yr = A0*cos(wc*(t-tau_0)).*heaviside(t-tau_0) + ... 
+%         Ad*Au*data1.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
+%         Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
+%         Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
 
 yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-13-2022/rx_array_chest_pab_005A_007B_ind_+30deg_tmux_18,5kfc_siggen_data_500bps_usrp_3m_depth_3m_u2b_2m_hphydro_0.dat');        
 %plot(t,yr);
@@ -356,17 +356,26 @@ angle(comb_ch_est)/pi*180
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-data_ch1 = data(t,preamble1,fb,n_data_reps1);
-data_ch2 = data(t-length(expected_preamble1)*n_data_reps1/fs-1e-3,preamble2,fb,n_data_reps2);
+init_delay = 50e-3;
+t0 = t - init_delay;
 
-data_comb = data(t-(length(expected_preamble1)*n_data_reps1+length(expected_preamble2)*n_data_reps2)/fs-2e-3,preamble2,fb,n_data_reps2);
+len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
+len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
 
-data_tot = (data_ch1+data_comb+1)/2.5+1j*(data_ch2+data_comb+1)/2.5;
+data_ch1_1 = data(t0,preamble1,fb,n_data_reps1);
+data_ch2_1 = data(t0-len_packet1-1e-3,preamble2,fb,n_data_reps2);
+data_comb_1 = data(t0-len_packet1-len_packet2-2e-3,preamble2,fb,n_data_reps2);
+
+data_ch1_2 = data(t0-len_packet1-2*len_packet2-3e-3,preamble1,fb,n_data_reps1);
+data_ch2_2 = data(t0-2*len_packet1-2*len_packet2-4e-3,preamble2,fb,n_data_reps2);
+data_comb_2 = data(t0-2*len_packet1-3*len_packet2-5e-3,preamble2,fb,n_data_reps2);
+
+data_tot = (data_ch1_1+data_ch1_2+data_comb_1+data_comb_2+1)/2.5+1j*(data_ch2_1+data_ch2_2+data_comb_1+data_comb_2+1)/2.5;
 
 figure;
 hold on;
 plot(real(data_tot));
-%plot(imag(data_tot));
+plot(imag(data_tot));
 
 write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
 
