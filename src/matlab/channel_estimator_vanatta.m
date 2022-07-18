@@ -51,7 +51,7 @@ t = [0:1/fs:t_len-1/fs];
 %         Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
 %         Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
 
-yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-15-2022/rx_array_chest_pab_007B_005A_ind_+180deg_tmux_18,5kfc_siggen_data_1kbps_usrp_3m_depth_3m_u2b_2m_hphydro_0.dat');        
+yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-15-2022/rx_array_chest_pab_007B_005A_ind_-56,25deg_tmux_18,5kfc_siggen_data_1kbps_usrp_3m_depth_2m_u2b_1m_hphydro_0.dat');        
 %plot(t,yr);
 % carrier = 0;
 % pb_sig = (1+m*data).*carrier;
@@ -157,7 +157,7 @@ rx_baseband = fftfilt(hpFilt,rx_baseband')';
 % rx_baseband = rx_baseband(gdhp+1:end);
 %expected_preamble1 = fftfilt(hpFilt,expected_preamble1);
 
-rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp:end);
+rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp-40:end);
 
 sig_sec = rx_baseband;
 Nfft = 2^nextpow2(length(sig_sec));
@@ -364,37 +364,50 @@ ylabel("Imaginary");
 grid on;
 grid minor;
 % 
-angle(n1_ch_est)/pi*180
-angle(n2_ch_est)/pi*180
-mean(angle(n1_ch_est./n2_ch_est)/pi*180)
-angle(comb_ch_est)/pi*180
+disp("Mean Sum of Single Node Channels Estimates");
+h1_h2 = mean(n1_ch_est+n2_ch_est)
+disp("Variance Sum of Single Node Channel Estimates");
+var(n1_ch_est+n2_ch_est)
 
-angle(exp(1j*(2*2*pi*0.07*sin(0/180*pi))/(1500/fc)))/pi*180
+disp("Mean of Combined Channel Estimates");
+h_tot = mean(comb_ch_est)
+disp("Variance of Combined Channel Estimates");
+var(comb_ch_est)
+
+disp("Error")
+(h1_h2-h_tot)./abs(h_tot) * 100
+
+disp("Mean Phase Difference")
+mean(angle(n1_ch_est./n2_ch_est)/pi*180)
+% angle(comb_ch_est)/pi*180
+
+disp("Expected Phase Difference")
+angle(exp(1j*(2*2*pi*0.07*sin(-60/180*pi))/(1500/fc)))/pi*180
 
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-t0 = t - init_delay;
-
-len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
-len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
-
-data_ch1_1 = data(t0,preamble1,fb,n_data_reps1);
-data_ch2_1 = data(t0-len_packet1-1e-3,preamble2,fb,n_data_reps2);
-data_comb_1 = data(t0-len_packet1-len_packet2-2e-3,preamble2,fb,n_data_reps2);
-
-data_ch1_2 = data(t0-len_packet1-2*len_packet2-3e-3,preamble1,fb,n_data_reps1);
-data_ch2_2 = data(t0-2*len_packet1-2*len_packet2-4e-3,preamble2,fb,n_data_reps2);
-data_comb_2 = data(t0-2*len_packet1-3*len_packet2-5e-3,preamble2,fb,n_data_reps2);
-
-data_tot = (data_ch1_1+data_ch1_2+data_comb_1+data_comb_2+1)/2.5+1j*(data_ch2_1+data_ch2_2+data_comb_1+data_comb_2+1)/2.5;
-
-figure;
-hold on;
-plot(real(data_tot));
-plot(imag(data_tot));
-
-write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
+% t0 = t - init_delay;
+% 
+% len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
+% len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
+% 
+% data_ch1_1 = data(t0,preamble1,fb,n_data_reps1);
+% data_ch2_1 = data(t0-len_packet1-1e-3,preamble2,fb,n_data_reps2);
+% data_comb_1 = data(t0-len_packet1-len_packet2-2e-3,preamble2,fb,n_data_reps2);
+% 
+% data_ch1_2 = data(t0-len_packet1-2*len_packet2-3e-3,preamble1,fb,n_data_reps1);
+% data_ch2_2 = data(t0-2*len_packet1-2*len_packet2-4e-3,preamble2,fb,n_data_reps2);
+% data_comb_2 = data(t0-2*len_packet1-3*len_packet2-5e-3,preamble2,fb,n_data_reps2);
+% 
+% data_tot = (data_ch1_1+data_ch1_2+data_comb_1+data_comb_2+1)/2.5+1j*(data_ch2_1+data_ch2_2+data_comb_1+data_comb_2+1)/2.5;
+% 
+% figure;
+% hold on;
+% plot(real(data_tot));
+% plot(imag(data_tot));
+% 
+% write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
 
 function out = data(t,code,fb,nreps)
     fm0_code = generate_fm0_sig2(code,2);
