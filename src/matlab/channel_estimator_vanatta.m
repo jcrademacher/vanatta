@@ -1,8 +1,10 @@
 fs = 2e5;
 fc = 18.5e3;
-fb = 500;
+fb = 1000;
 c = 1500;
 wc = 2*pi*fc;
+
+init_delay = 50e-3;
 
 dd = 3;
 du = 2;
@@ -16,9 +18,6 @@ Au = 0.2;
 tau_0 = d0 / c;
 tau_d = dd / c;
 tau_u = du / c;
-
-fpb1_lp = 7e3;
-fsb1_lp = 9e3;
 
 Nel = 1;
 
@@ -52,7 +51,7 @@ t = [0:1/fs:t_len-1/fs];
 %         Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
 %         Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
 
-yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-13-2022/rx_array_chest_pab_005A_007B_ind_+30deg_tmux_18,5kfc_siggen_data_500bps_usrp_3m_depth_3m_u2b_2m_hphydro_0.dat');        
+yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-15-2022/rx_array_chest_pab_007B_005A_ind_+180deg_tmux_18,5kfc_siggen_data_1kbps_usrp_3m_depth_3m_u2b_2m_hphydro_0.dat');        
 %plot(t,yr);
 % carrier = 0;
 % pb_sig = (1+m*data).*carrier;
@@ -93,7 +92,7 @@ fsb1 = fb/100;
 fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 5e3;
+fpb1_lp = 7e3;
 fsb1_lp = 9e3;
 
 % % highpass for after downsampling
@@ -146,7 +145,7 @@ gdhp = mean(gdhp);
 % lowpass filtering both removes the 2fc term and anti-alias filters
 % filtfilt used for 0 group delay filtering
 rx_baseband = fftfilt(lpFilt,rx_baseband')';
-rx_baseband = rx_baseband(gdlp+1:end);
+% rx_baseband = rx_baseband(gdlp+1:end);
 
 expected_preamble1 = filtfilt(lpFilt,expected_preamble1')';
 expected_preamble2 = filtfilt(lpFilt,expected_preamble2')';
@@ -155,8 +154,10 @@ expected_preamble_comb = filtfilt(lpFilt,expected_preamble_comb')';
 % remove DC mean
 % rx_baseband = rx_baseband - mean(rx_baseband);
 rx_baseband = fftfilt(hpFilt,rx_baseband')';
-rx_baseband = rx_baseband(gdhp+1:end);
+% rx_baseband = rx_baseband(gdhp+1:end);
 %expected_preamble1 = fftfilt(hpFilt,expected_preamble1);
+
+rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp:end);
 
 sig_sec = rx_baseband;
 Nfft = 2^nextpow2(length(sig_sec));
@@ -186,7 +187,6 @@ plot(real(sig_sec));
 subplot(2,1,2);
 plot(imag(sig_sec));
 
-%rx_baseband = rx_baseband(7000:end);
 
 %% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
 
@@ -238,10 +238,10 @@ figure;
 % CORRELATION AND DECODING %
 for pnum=1:N_trials*(N_packets1+N_packets2+N_comb_packets)
     for el=1:Nel
-        begdex = (pnum-1)*packet_len+1;
-        endex = pnum*packet_len;
-        end_preamble_dex = (pnum-1)*packet_len+1+preamble_len1;
-    
+        begdex = (pnum-1)*packet_len+1+40*(pnum-1);
+        endex = pnum*packet_len+40*(pnum-1);
+        end_preamble_dex = (pnum-1)*packet_len+1+preamble_len1+40*(pnum-1);
+
 %         beg_data_dex = (pnum-1)*data_len+1;
 %         end_data_dex = pnum*data_len;
     
@@ -272,7 +272,7 @@ for pnum=1:N_trials*(N_packets1+N_packets2+N_comb_packets)
         
         plot(abs_corr/30);
         hold on;
-        plot(real(rx_baseband(el,begdex:endex)));
+        plot(real(rx_baseband(el,begdex:end_preamble_dex)));
         plot([zeros(1,preamble_starts(el)) decode_preamble/500]);
         %xlim([0 1000]);
 
@@ -340,24 +340,40 @@ end
 mag_percent_error = abs(A_hat - Au*Ad) / (Au*Ad) * 100;
 ang_percent_error = abs(ang_hat - angle(exp(1j*2*pi*fc*(tau_u+tau_d)))) / angle(exp(1j*2*pi*fc*(tau_u+tau_d))) * 100;
 
-n1_ch_est = channel_estimates(1:N_packets1);
-n2_ch_est = channel_estimates(N_packets1+1:N_packets1+N_packets2);
-comb_ch_est = channel_estimates(N_packets1+N_packets2+1:end);
+n1_ch_est = [channel_estimates(1:N_packets1) channel_estimates(N_packets1+N_packets2+N_comb_packets+1:2*N_packets1+N_packets2+N_comb_packets)];
+n2_ch_est = [channel_estimates(N_packets1+1:N_packets1+N_packets2) channel_estimates(2*N_packets1+N_packets2+N_comb_packets+1:2*N_packets1+2*N_packets2+N_comb_packets)];
+comb_ch_est = [channel_estimates(N_packets1+N_packets2+1:N_packets1+N_packets2+N_comb_packets) channel_estimates(2*N_packets1+2*N_packets2+N_comb_packets+1:end)];
 
 figure;
 hold on;
-plot(n1_ch_est,'o','linewidth',8);
-plot(n2_ch_est,'o','linewidth',8);
-plot(comb_ch_est,'o','linewidth',8);
+plot(n1_ch_est(1:N_packets1),'o','linewidth',2,'Color','r');
+plot(n2_ch_est(1:N_packets2),'o','linewidth',2,'Color','g');
+plot(comb_ch_est(1:N_comb_packets),'o','linewidth',2,'Color','b');
 
+plot(n1_ch_est(N_packets1+1:end),'x','linewidth',2,'Color','r');
+plot(n2_ch_est(N_packets2+1:end),'x','linewidth',2,'Color','g');
+plot(comb_ch_est(N_comb_packets+1:end),'x','linewidth',2,'Color','b');
+
+xlim([-1 1]*1e-3);
+ylim([-1 1]*1e-3);
+
+xlabel("Real");
+ylabel("Imaginary");
+
+%axis equal;
+grid on;
+grid minor;
+% 
 angle(n1_ch_est)/pi*180
 angle(n2_ch_est)/pi*180
+mean(angle(n1_ch_est./n2_ch_est)/pi*180)
 angle(comb_ch_est)/pi*180
+
+angle(exp(1j*(2*2*pi*0.07*sin(0/180*pi))/(1500/fc)))/pi*180
 
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-init_delay = 50e-3;
 t0 = t - init_delay;
 
 len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
