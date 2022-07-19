@@ -51,7 +51,7 @@ t = [0:1/fs:t_len-1/fs];
 %         Ad*Au*data2.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u) + ...
 %         Ad*Au*data_comb.*cos(wc*(t-tau_d-tau_u)).*heaviside(t-tau_d-tau_u);
 
-yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-15-2022/rx_array_chest_pab_007B_005A_ind_-56,25deg_tmux_18,5kfc_siggen_data_1kbps_usrp_3m_depth_2m_u2b_1m_hphydro_0.dat');        
+yr = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-15-2022/rx_array_chest_pab_007B_005A_ind_+63,75deg_tmux_18,5kfc_siggen_data_1kbps_usrp_3m_depth_2m_u2b_1m_hphydro_0.dat');        
 %plot(t,yr);
 % carrier = 0;
 % pb_sig = (1+m*data).*carrier;
@@ -220,6 +220,8 @@ N_packets1 = 5;
 N_packets2 = 5;
 N_comb_packets = 5;
 
+node_delay = 1e-3;
+
 % % estimates after channel projection for individual elements
 % rx_rep_estimates = zeros(Nel,N_packets*(packet_len-preamble_len1));
 
@@ -238,9 +240,9 @@ figure;
 % CORRELATION AND DECODING %
 for pnum=1:N_trials*(N_packets1+N_packets2+N_comb_packets)
     for el=1:Nel
-        begdex = (pnum-1)*packet_len+1+40*(pnum-1);
+        begdex = (pnum-1)*packet_len+1;
         endex = pnum*packet_len+40*(pnum-1);
-        end_preamble_dex = (pnum-1)*packet_len+1+preamble_len1+40*(pnum-1);
+        end_preamble_dex = (pnum-1)*packet_len+1+preamble_len1;
 
 %         beg_data_dex = (pnum-1)*data_len+1;
 %         end_data_dex = pnum*data_len;
@@ -259,14 +261,19 @@ for pnum=1:N_trials*(N_packets1+N_packets2+N_comb_packets)
         % tx norm is length of preamble for binary keying (-1,+1)
         tx_norm = sum(abs(decode_preamble).^2);
         
-        % perform cross correlation for packet start
-        [rcorr,rlags] = xcorr(real(rx_baseband(el,begdex:end_preamble_dex))',decode_preamble');
-        [icorr,ilags] = xcorr(imag(rx_baseband(el,begdex:end_preamble_dex))',decode_preamble');
-        % removes tails of correlation 
-        corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
-        abs_corr = abs(corr_tot);
-        % find maximum correlation and begin decoding from there
-        [preamble_max,preamble_starts(el)] = max(abs_corr); 
+        if pnum == 1
+            % perform cross correlation for packet start
+            [rcorr,rlags] = xcorr(real(rx_baseband(el,begdex:end_preamble_dex))',decode_preamble');
+            [icorr,ilags] = xcorr(imag(rx_baseband(el,begdex:end_preamble_dex))',decode_preamble');
+            % removes tails of correlation 
+            corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
+            abs_corr = abs(corr_tot);
+            % find maximum correlation and begin decoding from there
+            [preamble_max,preamble_starts(el)] = max(abs_corr); 
+        end
+        
+        begdex = begdex + floor((pnum-1) / N_packets1)*node_delay*fs;
+        endex = endex + floor((pnum-1) / N_packets1)*node_delay*fs;
 
         clf;
         
@@ -285,6 +292,12 @@ for pnum=1:N_trials*(N_packets1+N_packets2+N_comb_packets)
         % slice out data
         packet_data = packet(preamble_len1+1:end);
         
+        %remove edges
+        packet_preamble = remove_edges(packet_preamble,preamble1,0.05,fb,fs);
+        decode_preamble = remove_edges(decode_preamble,preamble1,0.05,fb,fs);
+        % recompute tx_norm since some samples have been removed
+        tx_norm = sum(abs(decode_preamble).^2);
+
         % compute the channel estimate 
         channel_estimates(el,pnum) = sum(packet_preamble.*conj(decode_preamble))/tx_norm;
         A_hat(el,pnum) = 2*abs(channel_estimates(el,pnum));
@@ -367,12 +380,21 @@ grid minor;
 disp("Mean Sum of Single Node Channels Estimates");
 h1_h2 = mean(n1_ch_est+n2_ch_est)
 disp("Variance Sum of Single Node Channel Estimates");
-var(n1_ch_est+n2_ch_est)
+var_sum_ch_est = var(n1_ch_est+n2_ch_est)
 
 disp("Mean of Combined Channel Estimates");
 h_tot = mean(comb_ch_est)
 disp("Variance of Combined Channel Estimates");
-var(comb_ch_est)
+var_comb_ch_est = var(comb_ch_est)
+
+snr_sum_ch_est1 = abs(mean(n1_ch_est(1:N_packets1)+n2_ch_est(1:N_packets2)))^2/var(n1_ch_est(1:N_packets1)+n2_ch_est(1:N_packets2));
+snr_sum_ch_est2 = abs(mean(n1_ch_est(N_packets1+1:end)+n2_ch_est(N_packets2+1:end)))^2/var(n1_ch_est(N_packets1+1:end)+n2_ch_est(N_packets2+1:end));
+
+snr_comb_ch_est1 = abs(mean(comb_ch_est(1:N_comb_packets)))^2/var(comb_ch_est(1:N_comb_packets));
+snr_comb_ch_est2 = abs(mean(comb_ch_est(N_comb_packets+1:end)))^2/var(comb_ch_est(N_comb_packets+1:end));
+
+snr_sum_ch_est = 10*log10((snr_sum_ch_est1+snr_sum_ch_est2)/2);
+snr_comb_ch_est = 10*log10((snr_comb_ch_est1+snr_comb_ch_est2)/2);
 
 disp("Error")
 (h1_h2-h_tot)./abs(h_tot) * 100
@@ -409,6 +431,11 @@ angle(exp(1j*(2*2*pi*0.07*sin(-60/180*pi))/(1500/fc)))/pi*180
 % 
 % write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
 
+% out = remove_edges(expected_preamble1,preamble1,0.05,fb,fs);
+% plot(out);
+% hold on;
+% plot(expected_preamble1);
+
 function out = data(t,code,fb,nreps)
     fm0_code = generate_fm0_sig2(code,2);
     code_len = length(fm0_code);
@@ -417,4 +444,42 @@ function out = data(t,code,fb,nreps)
     for n=1:nreps*code_len
         out(logical((t < n*1/(2*fb)).*(t >= (n-1)*1/(2*fb)))) = fm0_code(mod(n-1,code_len)+1);
     end
+end
+
+% removal is a percentage of the bit period
+function out = remove_edges(data,expected_code,percent_removal,fb,fs)
+    if length(data) ~= length(expected_code)*fs/fb
+        error("Data length is not equal to expected length based on fb and fs given")
+    end
+
+%     fm0_code = generate_fm0_sig2(expected_code,2);
+    
+    % array of how many expected edges there are and their indexes (without
+    % beginning edge)
+    edge_indexes = zeros(length(expected_code)+length(expected_code(expected_code==0)),1);
+    
+    nedge = 1;
+    for n=1:length(expected_code)
+        % fill edge center indexes
+        bit = expected_code(n);
+        
+        if bit
+            edge_indexes(nedge) = n*fs/fb;
+            nedge = nedge + 1;
+        else
+            edge_indexes(nedge) = n*fs/fb-fs/(2*fb);
+            nedge = nedge + 1;
+            edge_indexes(nedge) = n*fs/fb;
+            nedge = nedge + 1;
+        end
+    end
+
+    sample_expansion = 2*floor(fs/fb*percent_removal/2)+1;
+    samples_to_remove = repelem(edge_indexes,sample_expansion);
+    samples_to_remove = samples_to_remove + repmat([-(sample_expansion-1)/2:1:(sample_expansion-1)/2]',length(edge_indexes),1);
+    samples_to_remove(end-(sample_expansion-1)/2+1:end) = [];
+    samples_to_remove = cat(1,[1:(sample_expansion-1)/2]',samples_to_remove);
+
+    data(samples_to_remove) = [];
+    out = data;
 end
