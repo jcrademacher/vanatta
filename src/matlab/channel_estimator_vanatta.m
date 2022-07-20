@@ -409,27 +409,27 @@ angle(exp(1j*(2*2*pi*0.07*sin(-60/180*pi))/(1500/fc)))/pi*180
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-% t0 = t - init_delay;
-% 
-% len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
-% len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
-% 
-% data_ch1_1 = data(t0,preamble1,fb,n_data_reps1);
-% data_ch2_1 = data(t0-len_packet1-1e-3,preamble2,fb,n_data_reps2);
-% data_comb_1 = data(t0-len_packet1-len_packet2-2e-3,preamble2,fb,n_data_reps2);
-% 
-% data_ch1_2 = data(t0-len_packet1-2*len_packet2-3e-3,preamble1,fb,n_data_reps1);
-% data_ch2_2 = data(t0-2*len_packet1-2*len_packet2-4e-3,preamble2,fb,n_data_reps2);
-% data_comb_2 = data(t0-2*len_packet1-3*len_packet2-5e-3,preamble2,fb,n_data_reps2);
-% 
-% data_tot = (data_ch1_1+data_ch1_2+data_comb_1+data_comb_2+1)/2.5+1j*(data_ch2_1+data_ch2_2+data_comb_1+data_comb_2+1)/2.5;
-% 
-% figure;
-% hold on;
-% plot(real(data_tot));
-% plot(imag(data_tot));
-% 
-% write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
+t0 = t - init_delay;
+
+len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
+len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
+
+data_ch1_1 = data(t0,preamble1,fb,n_data_reps1);
+data_ch2_1 = data(t0-len_packet1-1e-3,preamble2,fb,n_data_reps2);
+data_comb_1 = data(t0-len_packet1-len_packet2-2e-3,preamble2,fb,n_data_reps2);
+
+data_ch1_2 = data(t0-len_packet1-2*len_packet2-3e-3,preamble1,fb,n_data_reps1);
+data_ch2_2 = data(t0-2*len_packet1-2*len_packet2-4e-3,preamble2,fb,n_data_reps2);
+data_comb_2 = data(t0-2*len_packet1-3*len_packet2-5e-3,preamble2,fb,n_data_reps2);
+
+data_tot = (data_ch1_1+data_data_ch1_2+data_comb_1+data_comb_2+1)/2.5+1j*(data_ch2_1+data_ch2_2+data_comb_1+data_comb_2+1)/2.5;
+
+figure;
+hold on;
+plot(real(data_tot));
+plot(imag(data_tot));
+
+write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
 
 % out = remove_edges(expected_preamble1,preamble1,0.05,fb,fs);
 % plot(out);
