@@ -98,7 +98,7 @@ function atot = generate_pattern(params)
 
     at = zeros(params.N,Ntheta);    % transmitted wave column vector
     an = zeros(params.N,Ntheta);    % transmitted wave at observed point theta (far field)
-    sij = get_sparams([55.9 1350e-6 45e-9],[47.5 1310e-6 44.4e-9],params.f);
+    sij = get_sparams(90+1j*6,70+1j*8,params.f);
 
     lambda = params.c / params.f;
     k = 2*pi/lambda;

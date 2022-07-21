@@ -3,8 +3,8 @@ node = node(1:201,:);
 
 close all;
 
-fmin = 10e3;
-fmax = 30e3;
+fmin = 15e3;
+fmax = 25e3;
 
 f = node(:,1);
 
@@ -14,26 +14,28 @@ ifmax = find(f < fmax,1,'last');
 f = f(ifmin:ifmax);
 r = node(ifmin:ifmax,2);
 x = node(ifmin:ifmax,3);
-ydata = [r,x];
+ydata = [r';x'];
 zdata = r+1j*x;
 % % % 
-%rlc(1) = 200;
-% rlc(2) = 100e-5;
-% rlc(3) = 11e-9;
-% rlc(4) = 3e-9;
+n = 2;
+
+% rlc(1) = 10; % ohm
+% rlc(2) = 1; % uH
+% rlc(3) = 15; % nF
+% rlc(4) = 40; % nF
+rlc = rlc';
 
 rlc0 = rlc;
 
 func_min = @(rlc) rlc_model(rlc,f)-ydata;
 
-options = optimoptions('lsqnonlin','StepTolerance',1e-10,...
-    'MaxFunctionEvaluations',1e4,'MaxIterations',1e4,'Algorithm','trust-region-reflective');
-[rlc,resnorm,residuals,exitflag,output] = lsqnonlin(func_min,rlc0,[0 0 0 0],[],options);
+options = optimoptions('lsqnonlin','FunctionTolerance',1e-6,'StepTolerance',1e-9,'Display','iter');
+[rlc,resnorm,residuals,exitflag,output] = lsqnonlin(func_min,rlc0,[0 0 0 0]',[],options);
 
 % zopt = F(rlc,f);
 % 
 imp_opt = rlc_model(rlc,f);
-zopt = imp_opt(:,1)+1j*imp_opt(:,2);
+zopt = imp_opt(1,:)+1j*imp_opt(2,:);
 
 figure(1);
 subplot(1,2,1);
@@ -55,22 +57,24 @@ xlabel("Frequency (kHz)");
 ylabel("Imaginary Part (Ohm)");
 
 disp(strcat("R = ",num2str(rlc(1)), " ohm"));
-disp(strcat("L = ",num2str(rlc(2)/1e-6)," uH"));
-disp(strcat("C = ",num2str(rlc(3)/1e-9)," nF"));
-disp(strcat("C0 = ",num2str(rlc(4)/1e-9)," nF"));
+disp(strcat("L = ",num2str(rlc(2))," uH"));
+disp(strcat("C = ",num2str(rlc(3))," nF"));
+disp(strcat("C0 = ",num2str(rlc(4))," nF"));
+
+
 
 function yout = rlc_model(rlc,fdata)
     
     wdata = 2*pi*fdata;
-    yout = zeros(length(fdata),2); % allocate yout
+    yout = zeros(2,length(fdata)); % allocate yout
 
     R1 = rlc(1);
-    L1 = rlc(2);
-    C1 = rlc(3);
-    C0 = rlc(4);
+    L1 = rlc(2)*1e-3;
+    C1 = rlc(3)*1e-9;
+    C0 = rlc(4)*1e-9;
     
 %     yout(:,1) = real(R1+1j*wdata*L1+1./(1j*wdata*C1));
 %     yout(:,2) = imag(R1+1j*wdata*L1+1./(1j*wdata*C1));
-    yout(:,1) = real((R1+1j*wdata*L1+1./(1j*wdata*C1))./(1+1j*wdata*C0.*(R1+1j*wdata*L1+1./(1j*wdata*C1))));
-    yout(:,2) = imag((R1+1j*wdata*L1+1./(1j*wdata*C1))./(1+1j*wdata*C0.*(R1+1j*wdata*L1+1./(1j*wdata*C1))));
+    yout(1,:) = real((R1+1j*wdata*L1+1./(1j*wdata*C1))./(1+1j*wdata*C0.*(R1+1j*wdata*L1+1./(1j*wdata*C1))));
+    yout(2,:) = imag((R1+1j*wdata*L1+1./(1j*wdata*C1))./(1+1j*wdata*C0.*(R1+1j*wdata*L1+1./(1j*wdata*C1))));
 end
