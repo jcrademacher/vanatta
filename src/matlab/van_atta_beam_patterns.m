@@ -9,14 +9,23 @@ params.r = 1;
 params.phi = 0;
 params.do_direction_val = 0;
 
+imp1 = readmatrix("../../impedance/PAB2G_IND_RX_IMPEDANCE_RIVER_ROTATOR_8020.CSV");
+imp1 = imp1(1:201,:);
+
+imp2 = readmatrix("../../impedance/PAB4G_IND_RX_IMPEDANCE_RIVER_ROTATOR_8020.CSV");
+imp2 = imp2(1:201,:);
+
 dmin = 1e-2;
 dmax = 20e-2;
 
 phimin = -pi/2;
 phimax = pi/2;
 
-fmin = 5e3;
-fmax = 60e3;
+fmin = 10e3;
+fmax = 30e3;
+
+params.rlc1 = rlc_modeler(imp1,[fmin fmax],[]);
+params.rlc2 = rlc_modeler(imp2,[fmin fmax],[]);
 
 atot_db = generate_pattern(params);
 
@@ -98,7 +107,8 @@ function atot = generate_pattern(params)
 
     at = zeros(params.N,Ntheta);    % transmitted wave column vector
     an = zeros(params.N,Ntheta);    % transmitted wave at observed point theta (far field)
-    sij = get_sparams(90+1j*6,70+1j*8,params.f);
+
+    sij = get_sparams(params.rlc1,params.rlc2,params.f);
 
     lambda = params.c / params.f;
     k = 2*pi/lambda;
