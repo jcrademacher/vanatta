@@ -9,11 +9,11 @@ params.r = 1;
 params.phi = 0;
 params.do_direction_val = 0;
 
-imp1 = readmatrix("../../impedance/PAB2G_IND_RX_IMPEDANCE_RIVER_ROTATOR_8020.CSV");
-imp1 = imp1(1:201,:);
+imp1 = readmatrix("../../impedance/PAB004A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
+imp1 = imp1(1:801,:);
 
-imp2 = readmatrix("../../impedance/PAB4G_IND_RX_IMPEDANCE_RIVER_ROTATOR_8020.CSV");
-imp2 = imp2(1:201,:);
+imp2 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
+imp2 = imp2(1:801,:);
 
 dmin = 1e-2;
 dmax = 20e-2;
