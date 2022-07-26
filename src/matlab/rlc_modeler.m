@@ -1,4 +1,4 @@
-function [c0,rlc1,rlc2] = rlc_modeler(measured_data,fminmax,init_c0,init_rlc1,init_rlc2,ls,display)
+function rlc_c0 = rlc_modeler(measured_data,fminmax,init_rlc_c0,ls,display)
 
     fmin = fminmax(1);
     fmax = fminmax(2);
@@ -15,27 +15,21 @@ function [c0,rlc1,rlc2] = rlc_modeler(measured_data,fminmax,init_c0,init_rlc1,in
     zdata = r+1j*x;
     % % % 
 %     n = 2;
-    if isempty(init_c0) || isempty(init_rlc1) || isempty(init_rlc2)
+    if isempty(init_rlc_c0)
         rlc0(1) = 300; % ohm
         rlc0(2) = 6; % mH
         rlc0(3) = 15; % nF
         rlc0(4) = 40; % nF
 
-        rlc0(5) = 1;
-        rlc0(6) = 1; 
-        rlc0(7) = 1; 
-
         rlc0 = rlc0';
     else
-        rlc0 = [init_rlc1';init_c0;init_rlc2'];
+        rlc0 = init_rlc_c0;
     end
     
     func_min = @(rlc) rlc_model(rlc,f)-ydata;
     
-    options = optimoptions('lsqnonlin','FunctionTolerance',1e-12,'StepTolerance',1e-12,...
-                        'MaxFunctionEvaluations',10e3,'MaxIterations',10e3,'Display','iter',...
-                        'Algorithm','trust-region-reflective');
-    [rlc,~,~,~,~] = lsqnonlin(func_min,rlc0,[1 1 1 1 0.01 0.01 0.01]',[1e3 1e3 1e3 1e3 10 10 10],options);
+    options = optimoptions('lsqnonlin','FunctionTolerance',1e-9,'StepTolerance',1e-9,'MaxFunctionEvaluations',10e3,'Display','iter');
+    [rlc,~,~,~,~] = lsqnonlin(func_min,rlc0,[0 0 0 0]',[],options);
     
     %rlc = rlc0;
     imp_opt = rlc_model(rlc,f);
@@ -61,21 +55,14 @@ function [c0,rlc1,rlc2] = rlc_modeler(measured_data,fminmax,init_c0,init_rlc1,in
         xlabel("Frequency (kHz)");
         ylabel("Imaginary Part (Ohm)");
     
-%         disp(strcat("R = ",num2str(rlc(1)), " ohm"));
-%         disp(strcat("L = ",num2str(rlc(2))," mH"));
-%         disp(strcat("C = ",num2str(rlc(3))," nF"));
-%         disp(strcat("C0 = ",num2str(rlc(4))," nF"));
+        disp(strcat("R = ",num2str(rlc(1)), " ohm"));
+        disp(strcat("L = ",num2str(rlc(2))," mH"));
+        disp(strcat("C = ",num2str(rlc(3))," nF"));
+        disp(strcat("C0 = ",num2str(rlc(4))," nF"));
         %disp(strcat("Ls = ",num2str(rlc(5))," mH"));
     end
-    
-    rlc1(1) = rlc(1);
-    rlc1(2) = rlc(2)*1e-3;
-    rlc1(3) = rlc(3)*1e-9;
-    c0 = rlc(4)*1e-9;
 
-    rlc2(1) = rlc(5);
-    rlc2(2) = rlc(6);
-    rlc2(3) = rlc(7);
+    rlc_c0 = rlc;
 
     function yout = rlc_model(rlc,fdata)
 
@@ -86,22 +73,13 @@ function [c0,rlc1,rlc2] = rlc_modeler(measured_data,fminmax,init_c0,init_rlc1,in
         L1 = rlc(2)*1e-3;
         C1 = rlc(3)*1e-9;
         C0 = rlc(4)*1e-9;
-
-        R2 = R1*rlc(5);
-        L2 = L1*rlc(6);
-        C2 = C1*rlc(7);
-
-        imp_c0 = 1./(1j*wdata*C0);
-        imp_res1 = R1+1j*wdata*L1+1./(1j*wdata*C1);
-        imp_res2 = R2+1j*wdata*L2+1./(1j*wdata*C2);
-
-        imp = 1j*wdata*ls+par(imp_c0,par(imp_res1,imp_res2));
+        %L2 = rlc(5)*1e-3;
+        
+    %     yout(:,1) = real(R1+1j*wdata*L1+1./(1j*wdata*C1));
+    %     yout(:,2) = imag(R1+1j*wdata*L1+1./(1j*wdata*C1));
+        imp = 1j*wdata*ls+(R1+1j*wdata*L1+1./(1j*wdata*C1))./(1+1j*wdata*C0.*(R1+1j*wdata*L1+1./(1j*wdata*C1)));
 
         yout(1,:) = real(imp);
         yout(2,:) = imag(imp);
-
-        function ztot = par(z1,z2)
-            ztot = z1.*z2./(z1+z2);
-        end
     end
 end

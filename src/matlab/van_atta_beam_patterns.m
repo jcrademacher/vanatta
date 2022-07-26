@@ -1,4 +1,4 @@
-global params phimin phimax;
+global params phimin phimax ls;
 %close all;
 params.d = 7e-2;
 params.c = 1500;
@@ -7,7 +7,7 @@ params.N = 2;
 params.A = 10^(-40/20);
 params.r = 1;
 params.phi = 0;
-params.do_direction_val = 0;
+params.do_direction_val = 1;
 
 imp1 = readmatrix("../../impedance/PAB004A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
 imp1 = imp1(1:801,:);
@@ -21,11 +21,11 @@ dmax = 20e-2;
 phimin = -pi/2;
 phimax = pi/2;
 
-fmin = 10e3;
-fmax = 30e3;
-
-params.rlc1 = rlc_modeler(imp1,[fmin fmax],[]);
-params.rlc2 = rlc_modeler(imp2,[fmin fmax],[]);
+fmin = 15e3;
+fmax = 20e3;
+ls = 1.87e-3;
+params.rlc1 = rlc_modeler(imp1,[fmin fmax],[],ls,1);
+params.rlc2 = rlc_modeler(imp2,[fmin fmax],[],ls,1);
 
 atot_db = generate_pattern(params);
 
@@ -36,7 +36,7 @@ max_r_db = -30;
 Ntheta = 1000;
 theta = linspace(phimin,phimax,Ntheta); 
 
-f = figure(2);
+f = figure;
 ax = axes('Parent',f,'position',[0.13 0.39 0.77 0.54]);
 %subplot(1,3,3);
 pol = polarplot(theta,atot_db);
@@ -103,12 +103,39 @@ Ndrop.Callback = @update_plot;
 % gamma2 = (Zl-conj(Zr))/(Zl+Zr);
 
 function atot = generate_pattern(params)
-    global Ntheta theta min_r_db phimin phimax;
+    global Ntheta theta min_r_db phimin phimax ls;
 
     at = zeros(params.N,Ntheta);    % transmitted wave column vector
     an = zeros(params.N,Ntheta);    % transmitted wave at observed point theta (far field)
 
-    sij = get_sparams(params.rlc1,params.rlc2,params.f);
+    w = 2*pi*params.f;
+
+    r1 = params.rlc1(1);
+    l1 = params.rlc1(2)*1e-3;
+    c1 = params.rlc1(3)*1e-9;
+    c01 = params.rlc1(4)*1e-9;
+    ls1 = ls;
+
+    r2 = params.rlc2(1);
+    l2 = params.rlc2(2)*1e-3;
+    c2 = params.rlc2(3)*1e-9;
+    c02 = params.rlc2(4)*1e-9;
+    ls2 = ls;
+
+    A1 = 1+1j*w*c01.*(1./(1j*w*c1)+1j*w*l1);
+    B1 = 1./(1j*w*c1)+1j*w*l1+1j*w*ls1+1j*w*c01.*((1./(1j*w*c1)+1j*w*l1).*1j*w*ls1);
+    C1 = 1j*w*c01;
+    D1 = 1+1j*w*ls1.*(1j*w*c01);
+
+    A2 = 1+1j*w*ls2.*(1j*w*c02);
+    B2 = 1./(1j*w*c2)+1j*w*l2+1j*w*ls2+1j*w*c02.*((1./(1j*w*c2)+1j*w*l2).*1j*w*ls2);
+    C2 = 1j*w*c02;
+    D2 = 1+1j*w*c02.*(1./(1j*w*c2)+1j*w*l2);
+
+    T1 = [A1 B1;C1 D1];
+    T2 = [A2 B2;C2 D2];
+
+    sij = get_sparams(T1,T2,[r1 r2]);
 
     lambda = params.c / params.f;
     k = 2*pi/lambda;
