@@ -94,15 +94,10 @@ void send_from_file(
         }
 
        // while(not start_signal_called) {} // wait for start signal
-        const size_t samples_sent = tx_stream->send(&buff.front(), num_tx_samps, md);
-
-        //std::cout << boost::format("Samples sent: %f") % samples_sent << std::endl;
-        if (samples_sent != num_tx_samps) {
-            UHD_LOG_ERROR("TX-STREAM",
-                "The tx_stream timed out sending " << num_tx_samps << " samples ("
-                                                   << samples_sent << " sent).");
-            return;
+        for (size_t sent_all = 0;	 sent_all != num_tx_samps; ) {
+		    sent_all += tx_stream->send(&buff.front() + sent_all, num_tx_samps - sent_all, md);
         }
+
 
         md.start_of_burst = false;
     }
