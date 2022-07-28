@@ -4,8 +4,8 @@ imp1 = imp1(1:801,:);
 imp2 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
 imp2 = imp2(1:801,:);
 
-fmin = 10e3;
-fmax = 30e3;
+fmin = 15e3;
+fmax = 20e3;
 
 f = linspace(fmin,fmax,1000);
 w = 2*pi*f;

@@ -1,28 +1,28 @@
 global params phimin phimax ls;
 %close all;
-params.d = 7e-2;
+params.d = 28e-2;
 params.c = 1500;
 params.f = 18.5e3;
 params.N = 2;
 params.A = 10^(-40/20);
 params.r = 1;
 params.phi = 0;
-params.do_direction_val = 1;
+params.do_direction_val = 0;
 
-imp1 = readmatrix("../../impedance/PAB004A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
+imp1 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
 imp1 = imp1(1:801,:);
 
-imp2 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
+imp2 = readmatrix("../../impedance/PAB010B_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_010B_008A.CSV");
 imp2 = imp2(1:801,:);
 
 dmin = 1e-2;
-dmax = 20e-2;
+dmax = 30e-2;
 
 phimin = -pi/2;
 phimax = pi/2;
 
-fmin = 15e3;
-fmax = 20e3;
+fmin = 10e3;
+fmax = 30e3;
 ls = 1.87e-3;
 params.rlc1 = rlc_modeler(imp1,[fmin fmax],[],ls,1);
 params.rlc2 = rlc_modeler(imp2,[fmin fmax],[],ls,1);
