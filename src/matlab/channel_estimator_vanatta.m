@@ -90,8 +90,8 @@ fsb1 = fb/100;
 fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
-fpb1_lp = 7e3;
-fsb1_lp = 9e3;
+fpb1_lp = 7*fb;
+fsb1_lp = 9*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -103,8 +103,9 @@ lpFilt = designfilt('lowpassfir' ...
                     ,'StopbandFrequency',fsb1_lp*2/fs,'StopbandAttenuation' ...
                     ,80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
+packet_delay = 1e-3;
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-56.25:15:63.75];
+angles = [-90:15:90];
 Nang = length(angles);
 verbose = 0;
 do_plots = 0;
@@ -115,7 +116,7 @@ h_comb_arr = zeros(Nang,1);
 h_sum_snr_arr = zeros(Nang,1);
 h_comb_snr_arr = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Channel Estimate 07-15-2022/';
+root = '../../rx_outputs/River PAB Channel Estimate 08-04-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -128,7 +129,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_array_chest_pab_007B_005A_ind_?deg_tmux_18,5kfc_siggen_data_1kbps_usrp_3m_depth_2m_u2b_1m_hphydro_0.dat';
+    filename = 'rx_vanatta_chest_pab_008A_010B_14cm_sp_ind_?deg_ts3a_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_2m_u2b_1m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        
@@ -210,13 +211,15 @@ for n=1:Nang
         
         figure(2);
         subplot(2,1,1);
+        hold on;
         plot(real(sig_sec));
         subplot(2,1,2);
+        hold on;
         plot(imag(sig_sec));
     end
     
     
-    %% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
+%% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
     
     % N_data_bits = 0;
     % 
@@ -245,16 +248,11 @@ for n=1:Nang
     packet_len = preamble_len1;                 % known packet length in samples
     
     % number of packets to decode
-    % usually this needs to be set slightly lower than the total that was
-    % actually transmitted, I haven't investigated this further and am not sure
-    % why this is needed
-    N_trials = 2;
+    N_trials = 15;
     N_packets1 = 5;
     N_packets2 = 5;
     N_comb_packets = 5;
-    N_trial_packets = 3*N_packets;
-    
-    node_delay = 1e-3;
+    N_trial_packets = N_packets1+N_packets2+N_comb_packets;
     
     % % estimates after channel projection for individual elements
     % rx_rep_estimates = zeros(1,N_packets*(packet_len-preamble_len1));
@@ -276,15 +274,15 @@ for n=1:Nang
 
     % CORRELATION AND DECODING %
     for pnum=1:N_trials*N_trial_packets
-        if floor(mod(pnum-1,N_trial_packets)/N_packets) == 0
+        if floor(mod(pnum-1,N_trial_packets)/N_packets1) == 0
             decode_preamble = decode_preamble1;
-            sample_delay_adj = floor(node_delay*fs/N_packets1);
-        elseif floor(mod(pnum-1,N_trial_packets)/N_packets) == 1
+            sample_delay_adj = floor(packet_delay*fs/N_packets1);
+        elseif floor(mod(pnum-1,N_trial_packets)/N_packets1) == 1
             decode_preamble = decode_preamble2;
-            sample_delay_adj = floor(node_delay*fs/N_packets2);
+            sample_delay_adj = floor(packet_delay*fs/N_packets2);
         else
             decode_preamble = decode_preamble_comb;
-            sample_delay_adj = floor(node_delay*fs/N_comb_packets);
+            sample_delay_adj = floor(packet_delay*fs/N_comb_packets);
         end
         % remove +sample_delay_adj*(pnum-1) for single correlation
         begdex = (pnum-1)*packet_len+1+sample_delay_adj*(pnum-1);
@@ -312,8 +310,8 @@ for n=1:Nang
         [preamble_max,preamble_start] = max(abs_corr); 
 %         end
 %         
-%         begdex = begdex + floor((pnum-1) / N_packets1)*node_delay*fs;
-%         endex = endex + floor((pnum-1) / N_packets1)*node_delay*fs;
+%         begdex = begdex + floor((pnum-1) / N_packets1)*packet_delay*fs;
+%         endex = endex + floor((pnum-1) / N_packets1)*packet_delay*fs;
         if do_plots
             clf;
             
@@ -399,20 +397,19 @@ for n=1:Nang
     mag_percent_error = abs(A_hat - Au*Ad) / (Au*Ad) * 100;
     ang_percent_error = abs(ang_hat - angle(exp(1j*2*pi*fc*(tau_u+tau_d)))) / angle(exp(1j*2*pi*fc*(tau_u+tau_d))) * 100;
     
-    n1_ch_est = [channel_estimates(1:N_packets1) channel_estimates(N_packets1+N_packets2+N_comb_packets+1:2*N_packets1+N_packets2+N_comb_packets)];
-    n2_ch_est = [channel_estimates(N_packets1+1:N_packets1+N_packets2) channel_estimates(2*N_packets1+N_packets2+N_comb_packets+1:2*N_packets1+2*N_packets2+N_comb_packets)];
-    comb_ch_est = [channel_estimates(N_packets1+N_packets2+1:N_packets1+N_packets2+N_comb_packets) channel_estimates(2*N_packets1+2*N_packets2+N_comb_packets+1:end)];
+    index_arr = [1:length(channel_estimates)];
+
+    n1_ch_est = channel_estimates(floor(mod(index_arr-1,N_trial_packets)/N_packets1)==0);
+    n2_ch_est = channel_estimates(floor(mod(index_arr-1,N_trial_packets)/N_packets1)==1);
+    comb_ch_est = channel_estimates(floor(mod(index_arr-1,N_trial_packets)/N_packets1)==2);
     
     if do_plots
         figure;
         hold on;
-        plot(n1_ch_est(1:N_packets1),'o','linewidth',2,'Color','r');
-        plot(n2_ch_est(1:N_packets2),'o','linewidth',2,'Color','g');
-        plot(comb_ch_est(1:N_comb_packets),'o','linewidth',2,'Color','b');
+        plot(n1_ch_est,'x','linewidth',2,'Color','r');
+        plot(n2_ch_est,'x','linewidth',2,'Color','g');
+        plot(comb_ch_est,'x','linewidth',2,'Color','b');
         
-        plot(n1_ch_est(N_packets1+1:end),'x','linewidth',2,'Color','r');
-        plot(n2_ch_est(N_packets2+1:end),'x','linewidth',2,'Color','g');
-        plot(comb_ch_est(N_comb_packets+1:end),'x','linewidth',2,'Color','b');
         
         xlim([-1 1]*1e-3);
         ylim([-1 1]*1e-3);
@@ -447,8 +444,8 @@ for n=1:Nang
         channel_comb_snr = cat(2,channel_comb_snr,channel_snr((i-1)*N_trial_packets+N_packets1+N_packets2+1:i*N_trial_packets));
     end
 
-    h_sum_snr_arr(n) = median(channel_sum_snr);
-    h_comb_snr_arr(n) = median(channel_comb_snr);
+    h_sum_snr_arr(n) = 10*log10(median(channel_sum_snr));
+    h_comb_snr_arr(n) = 10*log10(median(channel_comb_snr));
     
     if verbose
         disp("Error")
@@ -459,64 +456,66 @@ for n=1:Nang
         % angle(comb_ch_est)/pi*180
         
         disp("Expected Phase Difference")
-        angle(exp(1j*(2*2*pi*0.07*sin((30)/180*pi))/(1500/fc)))/pi*180
+        angle(exp(1j*(2*2*pi*0.07*sin((ang)/180*pi))/(1500/fc)))/pi*180
     end
 end
-
-figure(5);
-hold on;
-plot(angles,20*log10(abs(h_comb_arr)));
-grid on;
-grid minor;
-xlabel("Angle (deg)");
-ylabel("Channel Mag (dB20)");
-
-figure(6);
-hold on;
-plot(angles,10*log10(h_comb_snr_arr));
-grid on;
-grid minor;
-xlabel("Angle (deg)");
-ylabel("Channel SNR (dB20)");
+%% PLOT VS ANGLE
+if length(angles) > 1
+    figure(5);
+    hold on;
+    plot(angles,20*log10(abs(h_comb_arr)));
+    grid on;
+    grid minor;
+    xlabel("Angle (deg)");
+    ylabel("Channel Mag (dB20)");
+    
+    figure(6);
+    hold on;
+    plot(angles,h_comb_snr_arr);
+    grid on;
+    grid minor;
+    xlabel("Angle (deg)");
+    ylabel("Channel SNR (dB20)");
+end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-t = [0:1/fs:2-1/fs];
-t0 = t - init_delay;
-
-len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
-len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
-
-do_vanatta = 1;
-
-data_real = zeros(1,length(t),'like',t);
-data_imag = zeros(1,length(t),'like',t);
-
-for n=1:N_trials
-    seg_ch1 = data(t0-(n-1)*len_packet1-2*(n-1)*len_packet2-(3*n-3)*node_delay,preamble1,fb,n_data_reps1);
-    seg_ch2 = data(t0-n*len_packet1-2*(n-1)*len_packet2-(3*n-2)*node_delay,preamble2,fb,n_data_reps2);
-    seg_comb = data(t0-n*len_packet1-(2*n-1)*len_packet2-(3*n-1)*node_delay,preamble2,fb,n_data_reps2);
-
-    data_real = data_real+seg_ch1+seg_comb/(do_vanatta+1);
-    data_imag = data_imag+seg_ch2+seg_comb/(do_vanatta+1);
-end
-
-if do_vanatta
-    data_tot = (1+1j)*(data_real+data_imag+1)/2.5;
-    data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*node_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
-    write_complex_binary(data_tot,"../../tx_outputs/vanatta_channel_estimating_data.dat");
-else
-    data_tot = (data_real+1)/2.5+1j*(data_imag+1)/2.5;
-    data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*node_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
-    write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
-end
-
-figure(1);
-hold on;
-plot(t,real(data_tot));
-plot(t,imag(data_tot));
+% t = [0:1/fs:2-1/fs];
+% t0 = t - init_delay;
 % 
-% write_complex_binary(data_tot,"../../tx_outputs/vanatta_channel_estimating_data.dat");
+% len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
+% len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
+% 
+% do_vanatta = 1;
+% 
+% data_real = zeros(1,length(t),'like',t);
+% data_imag = zeros(1,length(t),'like',t);
+% 
+% for n=1:N_trials
+%     seg_ch1 = data(t0-(n-1)*len_packet1-2*(n-1)*len_packet2-(3*n-3)*packet_delay,preamble1,fb,n_data_reps1);
+%     seg_ch2 = data(t0-n*len_packet1-2*(n-1)*len_packet2-(3*n-2)*packet_delay,preamble2,fb,n_data_reps2);
+%     seg_comb = data(t0-n*len_packet1-(2*n-1)*len_packet2-(3*n-1)*packet_delay,preamble2,fb,n_data_reps2);
+% 
+%     data_real = data_real+seg_ch1+seg_comb/(do_vanatta+1);
+%     data_imag = data_imag+seg_ch2+seg_comb/(do_vanatta+1);
+% end
+% 
+% if do_vanatta
+%     data_tot = (1+1j)*(data_real+data_imag)*0.7;
+%     data_tot(real(data_tot)+imag(data_tot)<0) = 0;
+%     data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
+%     write_complex_binary(data_tot,"../../tx_outputs/vanatta_channel_estimating_data.dat");
+% else
+%     data_tot = ((data_real)+1j*(data_imag))*0.7;
+%     data_tot(real(data_tot)+imag(data_tot)<0) = 0;
+%     data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
+%     write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
+% end
+% % 
+% figure(1);
+% hold on;
+% plot(t,real(data_tot));
+% plot(t,imag(data_tot));
 
 % out = remove_edges(expected_preamble1,preamble1,0.05,fb,fs);
 % plot(out);

@@ -1,6 +1,6 @@
 global params phimin phimax ls;
 %close all;
-params.d = 28e-2;
+params.d = 14e-2;
 params.c = 1500;
 params.f = 18.5e3;
 params.N = 2;
