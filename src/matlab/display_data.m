@@ -1,7 +1,16 @@
-sig = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 08-04-2022/rx_array_chest_pab_008A_010B_7cm_sp_ind_+75deg_ts3a_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_2m_u2b_1m_hphydro_0.dat');
-sig = sig(1:end);
-plot(real(sig));
-figure;
-periodogram(real(sig));
-max(real(sig))-min(real(sig))
+sig = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-28-2022/60Hz_test_rx_tx_u2b_0.dat');
+sig = real(sig(20:end));
+fs = 2e5;
+figure(1);
+plot(sig);
+
+window_size = floor(length(sig)/5);
+window = chebwin(window_size);
+
+[pxx,f] = pwelch(sig,window,[],[],fs);
+
+figure(2);
+hold on;
+plot(f/1e3,10*log10(pxx));
+xlabel("Freq (kHz)");
 

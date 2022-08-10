@@ -105,10 +105,10 @@ lpFilt = designfilt('lowpassfir' ...
 
 packet_delay = 1e-3;
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-90:15:90];
+angles = [0];
 Nang = length(angles);
-verbose = 0;
-do_plots = 0;
+verbose = 1;
+do_plots = 1;
 
 h_sum_arr = zeros(Nang,1);
 h_comb_arr = zeros(Nang,1);
@@ -186,22 +186,22 @@ for n=1:Nang
     rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp-40:end);
     
     sig_sec = rx_baseband;
-    Nfft = 2^nextpow2(length(sig_sec));
-    fft_sig = fft(sig_sec,Nfft);
-    [subcar_peak,subcar_peak_index] = max(fft_sig);
-    subcar_peak_f = subcar_peak_index/Nfft*fs;
-    subcar_peak_phase = angle(subcar_peak);
-    f = [-fs/2:fs/Nfft:fs/2-fs/Nfft];
+%     Nfft = 2^nextpow2(length(sig_sec));
+%     fft_sig = fft(sig_sec,Nfft);
+%     [subcar_peak,subcar_peak_index] = max(fft_sig);
+%     subcar_peak_f = subcar_peak_index/Nfft*fs;
+%     subcar_peak_phase = angle(subcar_peak);
+%     f = [-fs/2:fs/Nfft:fs/2-fs/Nfft];
     
     t_window = 0.1;
     window = chebwin(t_window*fs);
-    %Nfft = length(window);
+    Nfft = 2^nextpow2(length(window));
     
     if do_plots
         figure(1);
         hold on;
-        %[pxx,f] = pwelch(sig_sec,window,[],Nfft,fs,'power');
-        plot(f,20*log10(abs(fftshift(fft_sig))));
+        [pxx,f] = pwelch(sig_sec,window,[],Nfft,fs);
+        plot(f,10*log10(pxx));
         grid on;
         grid minor;
 
@@ -423,29 +423,20 @@ for n=1:Nang
     end
     % 
     % disp("Mean Sum of Single Node Channels Estimates");
-    h1_h2 = mean(n1_ch_est+n2_ch_est);
+    h1_h2 = median(n1_ch_est+n2_ch_est);
     % disp("Variance Sum of Single Node Channel Estimates");
     var_sum_ch_est = var(n1_ch_est+n2_ch_est);
 
     h_sum_arr(n) = h1_h2;
     
     % disp("Mean of Combined Channel Estimates");
-    h_tot = mean(comb_ch_est);
+    h_tot = median(comb_ch_est);
     % disp("Variance of Combined Channel Estimates");
     var_comb_ch_est = var(comb_ch_est);
 
     h_comb_arr(n) = h_tot;
-    
-    channel_sum_snr = [];
-    channel_comb_snr = [];
-
-    for i=1:N_trials
-        channel_sum_snr = cat(2,channel_sum_snr,channel_snr((i-1)*N_trial_packets+1:(i-1)*N_trial_packets+N_packets1+N_packets2));
-        channel_comb_snr = cat(2,channel_comb_snr,channel_snr((i-1)*N_trial_packets+N_packets1+N_packets2+1:i*N_trial_packets));
-    end
-
-    h_sum_snr_arr(n) = 10*log10(median(channel_sum_snr));
-    h_comb_snr_arr(n) = 10*log10(median(channel_comb_snr));
+   
+    h_comb_snr_arr(n) = median(channel_snr(floor(mod(index_arr-1,N_trial_packets)/N_packets1)==2));
     
     if verbose
         disp("Error")
@@ -471,7 +462,7 @@ if length(angles) > 1
     
     figure(6);
     hold on;
-    plot(angles,h_comb_snr_arr);
+    plot(angles,10*log10(h_comb_snr_arr));
     grid on;
     grid minor;
     xlabel("Angle (deg)");
@@ -568,4 +559,27 @@ function out = remove_edges(data,expected_code,percent_removal,fb,fs)
 
     data(samples_to_remove) = [];
     out = data;
+end
+
+function y = sinc_interp(x,s,u)
+    % Interpolates x sampled sampled at "s" instants
+    % Output y is sampled at "u" instants ("u" for "upsampled")
+    % (EXPECTS x, s, and u to be ROW VECTORS!!)
+
+    % Find the period of the undersampled signal
+    T = s(2)-s(1);
+
+    % When generating this matrix, remember that "s" and "u" are
+    % passed as ROW vectors and "y" is expected to also be a ROW
+    % vector. If everything were column vectors, we'd do.
+    %
+    % sincM = repmat( u, 1, length(s) ) - repmat( s', length(u), 1 );
+    %
+    % So that the matrix would be longer than it is wide.
+    % Here, we generate the transpose of that matrix.
+    sincM = repmat( u, length(s), 1 ) - repmat( s', 1, length(u) );
+
+    % Equivalent to column vector math:
+    % y = sinc( sincM'/T )*x';
+    y = x*sinc( sincM/T );
 end
