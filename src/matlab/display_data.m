@@ -1,6 +1,6 @@
-sig = read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-28-2022/60Hz_test_rx_tx_u2b_0.dat');
+sig = read_complex_binary('../../rx_outputs/River PAB Van Atta 4 08-11-2022/rx_single_chest_pab_008A_7cm_sp_ind_+0deg_nx5_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat');
 sig = real(sig(20:end));
-fs = 2e5;
+fs = 2e6;
 figure(1);
 plot(sig);
 

@@ -3,7 +3,7 @@ global params phimin phimax ls;
 params.d = 14e-2;
 params.c = 1500;
 params.f = 18.5e3;
-params.N = 2;
+params.N = 4;
 params.A = 10^(-40/20);
 params.r = 1;
 params.phi = 0;
@@ -135,7 +135,8 @@ function atot = generate_pattern(params)
     T1 = [A1 B1;C1 D1];
     T2 = [A2 B2;C2 D2];
 
-    sij = get_sparams(T1,T2,[r1 r2]);
+%     sij = get_sparams(T1,T2,T1,T2,[r1 r2 r1 r2]);
+    sij = [0 0 0 1;0 0 1 0;0 1 0 0;1 0 0 0];
 
     lambda = params.c / params.f;
     k = 2*pi/lambda;

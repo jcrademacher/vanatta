@@ -105,10 +105,10 @@ lpFilt = designfilt('lowpassfir' ...
 
 packet_delay = 1e-3;
 %%%% END DESIGN PARAMETERS %%%%
-angles = [0];
+angles = [-90:15:90];
 Nang = length(angles);
-verbose = 1;
-do_plots = 1;
+verbose = 0;
+do_plots = 0;
 
 h_sum_arr = zeros(Nang,1);
 h_comb_arr = zeros(Nang,1);
@@ -116,7 +116,7 @@ h_comb_arr = zeros(Nang,1);
 h_sum_snr_arr = zeros(Nang,1);
 h_comb_snr_arr = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Channel Estimate 08-04-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 08-11-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -129,7 +129,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_vanatta_chest_pab_008A_010B_14cm_sp_ind_?deg_ts3a_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_2m_u2b_1m_hphydro_0.dat';
+    filename = ['rx_array_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_?deg_nx5_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat'];
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        
@@ -436,7 +436,7 @@ for n=1:Nang
 
     h_comb_arr(n) = h_tot;
    
-    h_comb_snr_arr(n) = median(channel_snr(floor(mod(index_arr-1,N_trial_packets)/N_packets1)==2));
+    h_comb_snr_arr(n) = 10*log10(median(channel_snr(floor(mod(index_arr-1,N_trial_packets)/N_packets1)==2)));
     
     if verbose
         disp("Error")
@@ -462,7 +462,7 @@ if length(angles) > 1
     
     figure(6);
     hold on;
-    plot(angles,10*log10(h_comb_snr_arr));
+    plot(angles,h_comb_snr_arr);
     grid on;
     grid minor;
     xlabel("Angle (deg)");
