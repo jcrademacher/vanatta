@@ -1,6 +1,6 @@
 fs = 2e5;
 fc = 18.5e3;
-fb = 1000;
+fb = 200;
 c = 1500;
 wc = 2*pi*fc;
 
@@ -105,10 +105,10 @@ lpFilt = designfilt('lowpassfir' ...
 
 packet_delay = 1e-3;
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-90:15:90];
+angles = [0];
 Nang = length(angles);
-verbose = 0;
-do_plots = 0;
+verbose = 1;
+do_plots = 1;
 
 h_sum_arr = zeros(Nang,1);
 h_comb_arr = zeros(Nang,1);
@@ -116,7 +116,7 @@ h_comb_arr = zeros(Nang,1);
 h_sum_snr_arr = zeros(Nang,1);
 h_comb_snr_arr = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 08-11-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 08-15-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -129,7 +129,11 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
+<<<<<<< HEAD
     filename = ['rx_vanatta_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_?deg_nx5_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_1.dat'];
+=======
+    filename = ['rx_vanatta4_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_+0deg_nx5_18,5kfc_siggen_data_200bps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat'];
+>>>>>>> d8b7439bb2968e1a6e4164c6b9c56c6c116264d9
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        
@@ -471,13 +475,13 @@ end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-% t = [0:1/fs:2-1/fs];
+% t = [0:1/fs:1-1/fs];
 % t0 = t - init_delay;
 % 
 % len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
 % len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
 % 
-% do_vanatta = 1;
+% do_vanatta = 0;
 % 
 % data_real = zeros(1,length(t),'like',t);
 % data_imag = zeros(1,length(t),'like',t);
@@ -495,12 +499,12 @@ end
 %     data_tot = (1+1j)*(data_real+data_imag)*0.7;
 %     data_tot(real(data_tot)+imag(data_tot)<0) = 0;
 %     data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
-%     write_complex_binary(data_tot,"../../tx_outputs/vanatta_channel_estimating_data.dat");
+%     write_complex_binary(data_tot,strrep("../../tx_outputs/vanatta_channel_estimating_data_?bps.dat","?",num2str(round(fb))));
 % else
 %     data_tot = ((data_real)+1j*(data_imag))*0.7;
 %     data_tot(real(data_tot)+imag(data_tot)<0) = 0;
 %     data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
-%     write_complex_binary(data_tot,"../../tx_outputs/array_channel_estimating_data.dat");
+%     write_complex_binary(data_tot,strrep("../../tx_outputs/array_channel_estimating_data_?bps.dat","?",num2str(round(fb))));
 % end
 % % 
 % figure(1);
