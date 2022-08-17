@@ -129,7 +129,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = ['rx_array_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_?deg_nx5_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat'];
+    filename = ['rx_vanatta_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_?deg_nx5_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_1.dat'];
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        

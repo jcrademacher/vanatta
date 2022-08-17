@@ -1,4 +1,5 @@
-sig = real(read_complex_binary('../../rx_outputs/rx_no_tx_pumps_off/rx_no_tx_pumps_off_0.dat'));
+
+sig = real(read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-28-2022/60Hz_test_rx_tx_u2b_0.dat'));
 fs = 2e5;
 
 sig = sig(16e4:end);
@@ -12,9 +13,10 @@ Nfft = 2^nextpow2(window_size);
 rbw = enbw(window,fs);
 
 [pxx,f] = pwelch(sig,window,[],Nfft,fs);
+pxx = pxx/50;
 
-figure(1);
-plot(sig);
+% figure(1);
+% plot(sig);
 
 figure(2);
 hold on;
@@ -22,7 +24,7 @@ plot(f/1e3,10*log10(pxx));
 xlabel("Freq (kHz)");
 
 % compute phase noise
-offsets = [3*rbw:10:5e3];
+offsets = [ceil(3*rbw/10)*10:20:5e3];
 
 [carrier_val,carrier_index] = max(pxx);
 carrier_freq = f(carrier_index);
