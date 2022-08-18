@@ -1,6 +1,6 @@
 fs = 2e5;
 fc = 18.5e3;
-fb = 200;
+fb = 1000;
 c = 1500;
 wc = 2*pi*fc;
 
@@ -471,42 +471,42 @@ end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
 %% EXPORT DATA %%
-% t = [0:1/fs:1-1/fs];
-% t0 = t - init_delay;
+t = [0:1/fs:1-1/fs];
+t0 = t - init_delay;
+
+len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
+len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
+
+do_vanatta = 0;
+
+data_real = zeros(1,length(t),'like',t);
+data_imag = zeros(1,length(t),'like',t);
+
+for n=1:N_trials
+    seg_ch1 = data(t0-(n-1)*len_packet1-2*(n-1)*len_packet2-(3*n-3)*packet_delay,preamble1,fb,n_data_reps1);
+    seg_ch2 = data(t0-n*len_packet1-2*(n-1)*len_packet2-(3*n-2)*packet_delay,preamble2,fb,n_data_reps2);
+    seg_comb = data(t0-n*len_packet1-(2*n-1)*len_packet2-(3*n-1)*packet_delay,preamble2,fb,n_data_reps2);
+
+    data_real = data_real+seg_ch1+seg_comb/(do_vanatta+1);
+    data_imag = data_imag+seg_ch2+seg_comb/(do_vanatta+1);
+end
+
+if do_vanatta
+    data_tot = (1+1j)*(data_real+data_imag)*0.7;
+    data_tot(real(data_tot)+imag(data_tot)<0) = 0;
+    data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
+    write_complex_binary(data_tot,strrep("../../tx_outputs/vanatta_channel_estimating_data_?bps.dat","?",num2str(round(fb))));
+else
+    data_tot = ((data_real)+1j*(data_imag))*0.7;
+    data_tot(real(data_tot)+imag(data_tot)<0) = 0;
+    data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
+    write_complex_binary(data_tot,strrep("../../tx_outputs/array_channel_estimating_data_?bps.dat","?",num2str(round(fb))));
+end
 % 
-% len_packet1 = length(expected_preamble1)*n_data_reps1/fs;
-% len_packet2 = length(expected_preamble2)*n_data_reps2/fs;
-% 
-% do_vanatta = 0;
-% 
-% data_real = zeros(1,length(t),'like',t);
-% data_imag = zeros(1,length(t),'like',t);
-% 
-% for n=1:N_trials
-%     seg_ch1 = data(t0-(n-1)*len_packet1-2*(n-1)*len_packet2-(3*n-3)*packet_delay,preamble1,fb,n_data_reps1);
-%     seg_ch2 = data(t0-n*len_packet1-2*(n-1)*len_packet2-(3*n-2)*packet_delay,preamble2,fb,n_data_reps2);
-%     seg_comb = data(t0-n*len_packet1-(2*n-1)*len_packet2-(3*n-1)*packet_delay,preamble2,fb,n_data_reps2);
-% 
-%     data_real = data_real+seg_ch1+seg_comb/(do_vanatta+1);
-%     data_imag = data_imag+seg_ch2+seg_comb/(do_vanatta+1);
-% end
-% 
-% if do_vanatta
-%     data_tot = (1+1j)*(data_real+data_imag)*0.7;
-%     data_tot(real(data_tot)+imag(data_tot)<0) = 0;
-%     data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
-%     write_complex_binary(data_tot,strrep("../../tx_outputs/vanatta_channel_estimating_data_?bps.dat","?",num2str(round(fb))));
-% else
-%     data_tot = ((data_real)+1j*(data_imag))*0.7;
-%     data_tot(real(data_tot)+imag(data_tot)<0) = 0;
-%     data_tot(logical((t < init_delay)+(t > init_delay+(3*N_trials-1)*packet_delay+N_trials*(len_packet1+2*len_packet2)))) = 0;
-%     write_complex_binary(data_tot,strrep("../../tx_outputs/array_channel_estimating_data_?bps.dat","?",num2str(round(fb))));
-% end
-% % 
-% figure(1);
-% hold on;
-% plot(t,real(data_tot));
-% plot(t,imag(data_tot));
+figure(1);
+hold on;
+plot(t,real(data_tot));
+plot(t,imag(data_tot));
 
 % out = remove_edges(expected_preamble1,preamble1,0.05,fb,fs);
 % plot(out);
