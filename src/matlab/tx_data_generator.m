@@ -10,12 +10,12 @@ prbs_order = 15;
 fc = 20e3;
 fs = 2e5;
 fb = 1e3;
-fb_preamble = 100;
+fb_preamble = 1e3;
 
 fm0_samp = fs/fb;
 fm0_samp_preamble = fs/fb_preamble;
 
-N_packets = 1000;
+N_packets = 625;
 [next_data,seed] = prbs(prbs_order,N_data_bits);
 
 time_to_tx = N_packet_bits*N_packets/fb;
@@ -37,8 +37,8 @@ for pack=1:N_packets
     next_packet_fm0 = [preamble_fm0 next_data_fm0];
 end
 
-amp = 1/3;
-m=0.5;
+amp = 2/5;
+m=1;
 
 t = [0:(1/fs):(length(baseband)-1)/fs];
 
