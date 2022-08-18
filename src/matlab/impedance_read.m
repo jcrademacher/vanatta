@@ -1,8 +1,10 @@
-node1 = readmatrix("../../impedance/PAB1_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
-node1 = node1(1:201,:);
+Npts = 801;
 
-node2 = readmatrix("../../impedance/PAB3_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
-node2 = node2(1:201,:);
+node1 = readmatrix("../../impedance/PAB011A_RX_1k-60k_801PTS_2,5MD_RIVER_ROTATOR_008A_011B_011A_010B.CSV");
+node1 = node1(1:Npts,:);
+
+node2 = readmatrix("../../impedance/PAB010B_RX_1k-60k_801PTS_2,5MD_RIVER_ROTATOR_008A_011B_011A_010B.CSV");
+node2 = node2(1:Npts,:);
 
 % node3 = readmatrix("../../impedance/PAB4_RX_1k-60k_IMP_RIVER_ROTATOR_8020.CSV");
 % node3 = node3(1:201,:);
@@ -13,8 +15,8 @@ node2 = node2(1:201,:);
 N=2;
 
 % find zero crossings
-zerox = zeros(N,201);
-real_zerox = zeros(N,201);
+zerox = zeros(N,Npts);
+real_zerox = zeros(N,Npts);
 
 figure(1);
 lgd1 = legend;

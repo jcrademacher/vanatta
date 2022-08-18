@@ -36,6 +36,7 @@ packet_len = data_len+preamble_len;     % packet length in samples
 N_packets = 45;
 packet_delay = 1e-3; % delay in between each packet
 
+expected_data = real(read_complex_binary('../../tx_outputs/data_prbs_order=15_len=16_packets=625.dat'))';
 expected_data = repmat(preamble,1,4*N_packets);
 
 % highpass filter cutoffs
@@ -44,8 +45,8 @@ fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
 % lowpass filter cutoffs
-fpb1_lp = 5*fb;
-fsb1_lp = 7*fb;
+fpb1_lp = 7*fb;
+fsb1_lp = 9*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -304,7 +305,7 @@ for n=1:Nang
     h_median_snr_arr(n) = 10*log10(median(channel_snrs));
 
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
-    BER(BER == 0) = 1e-4;
+    BER(BER == 0) = 1e-5;
 end
 %% PLOT VS ANGLE
 if length(angles) > 0

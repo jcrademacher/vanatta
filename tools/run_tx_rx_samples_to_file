@@ -1,9 +1,9 @@
-cd ../rx_outputs/River\ PAB\ Van\ Atta\ 4\ 08-15-2022
+cd ../rx_outputs/River\ PAB\ Van\ Atta\ 4\ 08-18-2022
 ../../uhd/host/build/examples/rx_tx_samples_to_file \
     --args "addr0=192.168.10.2, addr1=192.168.10.3" \
-    --tx-file "../../tx_outputs/vanatta_channel_estimating_data_200bps.dat" \
-    --rx-file "rx_vanatta4_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_+0deg_nx5_18,5kfc_siggen_data_200bps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat" \
-    --nsamps 3000000 --tx-rate 200000 --rx-rate 200000 --settling 5 \
+    --tx-file "../../tx_outputs/vanatta_channel_estimating_data_1000bps.dat" \
+    --rx-file "rx_vanatta4_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_iso_+90deg_nx5_18,5kfc_nonprbs_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat" \
+    --nsamps 1000000 --tx-rate 200000 --rx-rate 200000 --settling 5 \
     --tx-channels "0" --rx-channels "1"
 
 

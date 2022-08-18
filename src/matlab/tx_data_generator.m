@@ -3,14 +3,16 @@ preamble = [0 0 1 1 1 0 1 0];
 %preamble_fm0 = [0 1 0 1 0 0 1 1 0 0 1 0 1 1 0 1];
 
 N_preamble_bits = length(preamble);
-N_data_bits = 12;
+N_data_bits = 16;
 N_packet_bits = N_data_bits+N_preamble_bits;
 prbs_order = 15;
 
+init_delay = 50e-3;
+
 fc = 20e3;
 fs = 2e5;
-fb = 1e3;
-fb_preamble = 1e3;
+fb = 500;
+fb_preamble = fb;
 
 fm0_samp = fs/fb;
 fm0_samp_preamble = fs/fb_preamble;
@@ -36,6 +38,8 @@ for pack=1:N_packets
     [next_data_fm0,state] = generate_fm0_sig2(next_data,fm0_samp,state);
     next_packet_fm0 = [preamble_fm0 next_data_fm0];
 end
+
+baseband = [-1*ones(1,round(init_delay*fs)) baseband];
 
 amp = 2/5;
 m=1;
@@ -64,6 +68,12 @@ preamble_filename = strcat("../../tx_outputs/baseband_preamble_fm0_",num2str(N_p
                             strrep(num2str(m,2),'.',','),"_a=",...
                             strrep(num2str(amp,2),'.',','),".dat"); 
 
+baseband_filename = strcat("../../tx_outputs/baseband_fm0_",num2str(N_packets),'packets_',...
+                            strrep(num2str(fb/1e3),'.',','),"kbps_Npreamblebits=",...
+                            num2str(N_preamble_bits),"_Ndatabits=",...
+                            num2str(N_data_bits),".dat"); 
+
 write_complex_binary(tx,modulated_filename);
 write_complex_binary(all_data,data_filename);
 write_complex_binary(encoded_baseband_preamble,preamble_filename);
+write_complex_binary(encoded_baseband,baseband_filename);
