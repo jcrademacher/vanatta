@@ -59,17 +59,18 @@ lpFilt = designfilt('lowpassfir' ...
                     ,80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-90:15:90];
+angles = [-90:45:90];
 Nang = length(angles);
 verbose = 0;
 do_plots = 0;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
+noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 08-15-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 08-18-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -82,7 +83,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_?deg_nx5_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_6m_u2b_5m_hphydro_0.dat';
+    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_iso_?deg_nx5_18,5kfc_nonprbs_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -193,6 +194,7 @@ for n=1:Nang
     
     channel_estimates = zeros(1,N_packets);
     channel_snrs = zeros(1,N_packets);
+    noise_power = zeros(1,N_packets);
     
     decode_preamble = expected_preamble-mean(expected_preamble);
     
@@ -265,9 +267,9 @@ for n=1:Nang
         noise_est = reshape(noise_est,[fs/fb preamble_len/(fs/fb)]);
         
         noise_est_per_bit = mean(noise_est);
-        noise_power = var(noise_est_per_bit);
+        noise_power(pnum) = var(noise_est_per_bit);
 
-        channel_snrs(pnum) = abs(channel_estimates(pnum))^2/noise_power;
+        channel_snrs(pnum) = abs(channel_estimates(pnum))^2/noise_power(pnum);
         
         % extract estimate of data only
         data_estimates(beg_data_dex:end_data_dex) = packet_data.*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;
@@ -303,6 +305,7 @@ for n=1:Nang
 
     h_median_arr(n) = median(channel_estimates);
     h_median_snr_arr(n) = 10*log10(median(channel_snrs));
+    noise_median_arr(n) = 10*log10(median(noise_power));
 
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
     BER(BER == 0) = 1e-5;
@@ -320,6 +323,7 @@ if length(angles) > 0
     figure(6);
     hold on;
     plot(angles,h_median_snr_arr);
+%     plot(angles,20*log10(abs(h_median_arr))-noise_median_arr);
     grid on;
     grid minor;
     xlabel("Angle (deg)");
@@ -332,6 +336,15 @@ if length(angles) > 0
     grid minor;
     xlabel("Median Bit SNR (dB)");
     ylabel("Total BER");
+
+    figure(8);
+    hold on;
+    plot(angles,noise_median_arr);
+    grid on;
+    grid minor;
+    title("Median Noise Power (dB) vs. Angle (deg)");
+    xlabel("Angle (deg)");
+    ylabel("Median Noise Power (dB)");
 end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
