@@ -1,6 +1,6 @@
 fs = 2e5;
 fc = 18.5e3;
-fb = 500;
+fb = 1000;
 c = 1500;
 wc = 2*pi*fc;
 
@@ -63,7 +63,7 @@ lpFilt = designfilt('lowpassfir' ...
 angles = [0];
 Nang = length(angles);
 verbose = 0;
-do_plots = 0;
+do_plots = 1;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
@@ -71,7 +71,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 08-23-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 08-24-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -84,7 +84,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_single_chest_pab_010B_nostag_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_6m_5m_hphydro_0.dat';
+    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_1kbps_usrp_2,5m_depth_010A_purui_tx_8m_7m_hphydro_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -200,7 +200,7 @@ for n=1:Nang
     decode_preamble = expected_preamble-mean(expected_preamble);
     
     if do_plots
-        figure;
+        figure(3);
     end
     
     packet_delay_adj = floor(packet_delay*fs);
@@ -265,7 +265,7 @@ for n=1:Nang
 
         % SNR calculation 
         noise_est = packet_preamble-channel_estimates(pnum).*decode_preamble;
-        noise_est = reshape(noise_est,[fs/fb preamble_len/(fs/fb)]);
+        noise_est = reshape(noise_est,[fm0_samp N_preamble_bits]);
         
         noise_est_per_bit = mean(noise_est);
         noise_power(pnum) = var(noise_est_per_bit);
@@ -289,7 +289,7 @@ for n=1:Nang
     end
     
     if do_plots
-        figure;
+        figure(4);
         hold on;
         plot(channel_estimates,'x','linewidth',2);
         

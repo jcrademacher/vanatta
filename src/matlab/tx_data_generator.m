@@ -11,7 +11,7 @@ init_delay = 50e-3;
 
 fc = 18.5e3;
 fs = 2e5;
-fb = 250;
+fb = 1000;
 fb_preamble = fb;
 
 fm0_samp = fs/fb;
@@ -51,8 +51,18 @@ encoded_baseband_preamble = encoded_baseband(1:N_preamble_bits*fs/fb_preamble);
 
 tx = encoded_baseband.*cos(2*pi*fc*t);
 %tx = baseband_long.*cos(2*pi*fc*t_long);
-plot(t,encoded_baseband);
+%plot(t,encoded_baseband);
 %ylim([-1.5 1.5]);
+
+window_size = floor(length(tx)/5);
+window = chebwin(window_size);
+
+[pxx,f] = pwelch(tx,window,[],[],fs,'power');
+
+figure(2);
+hold on;
+plot(f/1e3,10*log10(pxx));
+xlabel("Freq (kHz)");
 
 modulated_filename = strcat("../../tx_outputs/tx_modulated_fm0_",strrep(num2str(fc/1e3),'.',','),"kfc_",...
                             strrep(num2str(fb/1e3),'.',','),"kbps_m=",...
