@@ -1,6 +1,6 @@
 fs = 2e5;
 fc = 18.5e3;
-fb = 1000;
+fb = 500;
 c = 1500;
 wc = 2*pi*fc;
 
@@ -25,7 +25,7 @@ preamble = [0 0 1 1 1 0 1 0];
 expected_preamble = generate_fm0_sig2(preamble,fm0_samp);
     
 N_preamble_bits = length(preamble);
-N_data_bits = 32;
+N_data_bits = 16;
 
 preamble_len = fm0_samp*N_preamble_bits;
 data_len = fm0_samp*N_data_bits;                 % known data length in samples
@@ -33,11 +33,12 @@ data_len = fm0_samp*N_data_bits;                 % known data length in samples
 packet_len = data_len+preamble_len;     % packet length in samples
 
 % number of packets to decode
-N_packets = 45;
-packet_delay = 1e-3; % delay in between each packet
+N_packets = 625;
+packet_delay = 0; % delay in between each packet
+N_tot_bits = N_data_bits*N_packets;
 
 expected_data = real(read_complex_binary('../../tx_outputs/data_prbs_order=15_len=16_packets=625.dat'))';
-expected_data = repmat(preamble,1,4*N_packets);
+%expected_data = repmat(preamble,1,4*N_packets);
 
 % highpass filter cutoffs
 fsb1 = fb/100;
@@ -59,7 +60,7 @@ lpFilt = designfilt('lowpassfir' ...
                     ,80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-90:45:90];
+angles = [0];
 Nang = length(angles);
 verbose = 0;
 do_plots = 0;
@@ -70,7 +71,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 08-18-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 08-23-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -83,7 +84,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_7cm_sp_ind1,5m_iso_?deg_nx5_18,5kfc_nonprbs_1kbps_usrp_2,5m_depth_3m_u2b_2m_hphydro_0.dat';
+    filename = 'rx_single_chest_pab_010B_nostag_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_6m_5m_hphydro_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -306,9 +307,10 @@ for n=1:Nang
     h_median_arr(n) = median(channel_estimates);
     h_median_snr_arr(n) = 10*log10(median(channel_snrs));
     noise_median_arr(n) = 10*log10(median(noise_power));
-
+    
+    min_BER = 1/N_tot_bits;
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
-    BER(BER == 0) = 1e-5;
+    BER(BER == 0) = min_BER;
 end
 %% PLOT VS ANGLE
 if length(angles) > 0

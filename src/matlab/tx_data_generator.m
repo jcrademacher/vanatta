@@ -9,9 +9,9 @@ prbs_order = 15;
 
 init_delay = 50e-3;
 
-fc = 20e3;
+fc = 18.5e3;
 fs = 2e5;
-fb = 1000;
+fb = 250;
 fb_preamble = fb;
 
 fm0_samp = fs/fb;
