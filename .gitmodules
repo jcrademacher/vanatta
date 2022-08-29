@@ -1,4 +1,4 @@
 [submodule "uhd"]
 	path = uhd
 	url = https://github.com/EttusResearch/uhd.git
-	branch=master
+	branch=UHD-4.1
