@@ -1,11 +1,11 @@
 function [bits] = camera_decode(signal,fm0_samps,bit_num)
-    s0_1 = transpose(generate_fm0_sig2(~[1 0 1],fm0_samps));
+    s0_1 = transpose(generate_fm0_sig2([1 0 1],fm0_samps));
     s0_1 = s0_1(ceil(fm0_samps/2) + 1 :end - ceil(fm0_samps/2));
     s0_2 = -1.*s0_1;
     
     
     
-    s1_1 = transpose(generate_fm0_sig2(~[1 1 1],fm0_samps));
+    s1_1 = transpose(generate_fm0_sig2([1 1 1],fm0_samps));
     s1_1 = s1_1(ceil(fm0_samps/2) + 1 :end - ceil(fm0_samps/2));
     s1_2 = -1.*s1_1;
     

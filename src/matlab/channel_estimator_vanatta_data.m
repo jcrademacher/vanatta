@@ -219,7 +219,7 @@ for n=1:Nang
         end_preamble_dex = (pnum-1)*packet_len+preamble_len+packet_delay_adj*(pnum-1);
 
         beg_data_dex = (pnum-1)*data_len+1;
-        end_data_dex = pnum*(data_len+fm0_samp);
+        end_data_dex = pnum*data_len+fm0_samp;
     
         beg_bit_dex = (pnum-1)*N_data_bits+1;
         end_bit_dex = pnum*N_data_bits;
