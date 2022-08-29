@@ -1,6 +1,6 @@
 fs = 2e5;
 fc = 18.5e3;
-fb = 1000;
+fb = 500;
 c = 1500;
 wc = 2*pi*fc;
 
@@ -59,6 +59,13 @@ lpFilt = designfilt('lowpassfir' ...
                     ,'StopbandFrequency',fsb1_lp*2/fs,'StopbandAttenuation' ...
                     ,80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
+[gdlp,w] = grpdelay(lpFilt);
+gdlp = mean(gdlp);
+
+[gdhp,w] = grpdelay(hpFilt);
+gdhp = mean(gdhp);
+
+
 %%%% END DESIGN PARAMETERS %%%%
 angles = [0];
 Nang = length(angles);
@@ -84,7 +91,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_1kbps_usrp_2,5m_depth_010A_purui_tx_8m_7m_hphydro_0.dat';
+    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_6m_5m_hphydro_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -118,13 +125,7 @@ for n=1:Nang
     rx_baseband = rx_signals.*lo;
     % slice out where data starts
     %rx_baseband = rx_baseband(1500:end);
-    
-    [gdlp,w] = grpdelay(lpFilt);
-    gdlp = mean(gdlp);
-    
-    [gdhp,w] = grpdelay(hpFilt);
-    gdhp = mean(gdhp);
-    
+   
     % lowpass filtering both removes the 2fc term and anti-alias filters
     % filtfilt used for 0 group delay filtering
     rx_baseband = fftfilt(lpFilt,rx_baseband')';
