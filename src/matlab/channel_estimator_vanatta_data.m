@@ -46,8 +46,8 @@ fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
 % lowpass filter cutoffs
-fpb1_lp = 7*fb;
-fsb1_lp = 9*fb;
+fpb1_lp = 3*fb;
+fsb1_lp = 5*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -314,7 +314,7 @@ for n=1:Nang
     BER(BER == 0) = min_BER;
 end
 %% PLOT VS ANGLE
-if length(angles) > 0
+if length(angles) > 1
     figure(5);
     hold on;
     plot(angles,20*log10(abs(h_median_arr)));
