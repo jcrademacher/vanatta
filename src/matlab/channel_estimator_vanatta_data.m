@@ -46,8 +46,8 @@ fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
 % lowpass filter cutoffs
-fpb1_lp = 3*fb;
-fsb1_lp = 5*fb;
+fpb1_lp = 5*fb;
+fsb1_lp = 7*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -209,6 +209,8 @@ for n=1:Nang
     % tx norm is length of preamble for binary keying (-1,+1)
     tx_norm = sum(abs(decode_preamble).^2);
 
+    fm0_half_samp = ceil(fm0_samp/2);
+
     % CORRELATION AND DECODING %
     for pnum=1:N_packets
         % remove +sample_delay_adj*(pnum-1) for single correlation
@@ -217,7 +219,7 @@ for n=1:Nang
         end_preamble_dex = (pnum-1)*packet_len+preamble_len+packet_delay_adj*(pnum-1);
 
         beg_data_dex = (pnum-1)*data_len+1;
-        end_data_dex = pnum*data_len;
+        end_data_dex = pnum*(data_len+fm0_samp);
     
         beg_bit_dex = (pnum-1)*N_data_bits+1;
         end_bit_dex = pnum*N_data_bits;
@@ -247,11 +249,11 @@ for n=1:Nang
         %xlim([0 1000]);
 
         % slice out data packet found from correlation
-        packet = rx_baseband(begdex+preamble_start-1:endex+preamble_start-1);
+        packet = rx_baseband(begdex+preamble_start-1-fm0_half_samp:endex+preamble_start-1+fm0_half_samp);
         % remove the mean
         packet = packet - mean(packet(1:preamble_len));
         % slice out preamble
-        packet_preamble = packet(1:preamble_len);
+        packet_preamble = packet(fm0_half_samp+1:fm0_half_samp+preamble_len);
         % slice out data
         packet_data = packet(preamble_len+1:end);
         
