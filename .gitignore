@@ -5,3 +5,4 @@ impedance/*
 .DS_Store
 .vscode
 *.mat
+build

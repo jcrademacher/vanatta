@@ -6,11 +6,12 @@ This project is an extension of the Van Atta array to piezoelectric devices in t
 
 ## Installation
 
-Clone this repo with 
+Visit our [How to Set-Up USRP Tutorial](https://docs.google.com/document/d/1ePhpxb1y15XBV4cvTJPKnmYtWSkvokSHL-_EcKC4X9U/edit) for UHD build, installation, and getting started instructions. Installing this repo is a prerequisite for compiling the C++ sources that control the USRP. 
 
-`git clone https://github.mit.edu/jradema/vanatta.git --recurse-submodules`
+Once UHD has been `make`'d and `sudo make install`'d in a separate directory, if installing for the first time, run: <br>
+`mkdir build && cd build && cmake ../ && make -j` <br>
 
-Visit our [How to Set-Up USRP Tutorial](https://docs.google.com/document/d/1ePhpxb1y15XBV4cvTJPKnmYtWSkvokSHL-_EcKC4X9U/edit) for UHD build, installation, and getting started instructions. 
+The binaries will be built into executables in the build folder.  
 
 ## Use
 

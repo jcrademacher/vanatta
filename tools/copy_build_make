@@ -1,9 +1,0 @@
-cp ../src/c/* ../uhd/host/examples/
-cp ../CMakeLists.txt ../uhd/host/examples/
-cd ../uhd/host/build
-CC=/usr/bin/clang CXX=/usr/bin/clang++ \
-      cmake -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10 \
-     -DPYTHON_INCLUDE_DIR=/opt/homebrew/Frameworks/Python.framework/Versions/3.10/Headers \
-     -DPYTHON_LIBRARY=/opt/homebrew/Frameworks/Python.framework/Versions/3.10/Python ../ \
-     -DRUNTIME_PYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10
-make -j16
