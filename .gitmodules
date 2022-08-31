@@ -1,7 +1,0 @@
-[submodule "uhd"]
-	path = uhd
-	url = https://github.com/EttusResearch/uhd.git
-	branch=UHD-4.1
-[submodule "autorotator"]
-	path = autorotator
-	url = https://github.mit.edu/jradema/autorotator
