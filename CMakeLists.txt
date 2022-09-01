@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 set(TARGET_NAME vanatta)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(${TARGET_NAME})
 
@@ -20,6 +22,3 @@ foreach(srcfile ${SOURCES} )
     target_link_libraries(${srcname} ${Boost_LIBRARIES})
     target_link_libraries(${srcname} ${UHD_LIBRARIES})
 endforeach(srcfile ${SOURCES})
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
