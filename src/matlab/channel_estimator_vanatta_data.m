@@ -78,7 +78,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 08-24-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 09-15-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -91,7 +91,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_single_chest_pab_011B_nostag_7cm_sp_2,9mtxfmr_+0deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_6m_5m_hphydro_0.dat';
+    filename = 'rx_single_chest_pab_011B_stag9cm_7cm_sp_2,9mtxfmr_+180deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_300mVpp_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -101,7 +101,7 @@ for n=1:Nang
     rx_len = length(sig);
     % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
     rx_signals = zeros(1,rx_len);
-    rx_signals(1,:) = real(sig);
+    rx_signals(1,:) = real(sig)-imag(sig);
     
     %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
     % have had some issues with it in the past and since RX and TX USRPs are 
@@ -322,7 +322,7 @@ for n=1:Nang
 
     load jack_data_vanatta.mat;
 
-    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',complete_bits,1,624,1.126e-4,weights,1);
+    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',complete_bits,100,525,1.126e-4,0,1);
 end
 %% PLOT VS ANGLE
 if length(angles) > 1

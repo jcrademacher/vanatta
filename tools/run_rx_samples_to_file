@@ -1,0 +1,4 @@
+cd ../rx_outputs/River\ PAB\ Van\ Atta\ 4\ 09-15-2022
+./../../build/rx_samples_to_file \
+    --args "addr0=192.168.10.3" --rate 200000 --ref "external" --type "float" --nsamps 7000000 --file "rx_hydro_test.dat" --subdev "A:A"
+    

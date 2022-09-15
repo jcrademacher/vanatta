@@ -2,6 +2,6 @@ cd ../rx_outputs/River\ PAB\ Van\ Atta\ 4\ 09-15-2022
 ./../../build/rx_tx_samples_to_file \
     --args "addr0=192.168.10.3" \
     --tx-file "../../tx_outputs/baseband_fm0_625packets_0,5kbps_Npreamblebits=8_Ndatabits=16.dat" \
-    --rx-file "rx_vanatta4_chest_pab_012A_009A_013A_013B_stag9cm_7cm_sp_2,9mtxfmr_+0deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_1Vpp_0.dat" \
+    --rx-file "rx_single_chest_pab_011B_stag9cm_7cm_sp_2,9mtxfmr_+180deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_300mVpp_0.dat" \
     --nsamps 7000000 --tx-rate 200000 --rx-rate 200000 --settling 5 \
     --tx-channels "0" --rx-channels "0"
