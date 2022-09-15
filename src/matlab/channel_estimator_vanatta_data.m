@@ -211,6 +211,8 @@ for n=1:Nang
 
     fm0_half_samp = ceil(fm0_samp/2);
 
+    global_preamble_start = 0;
+
     % CORRELATION AND DECODING %
     for pnum=1:N_packets
         % remove +sample_delay_adj*(pnum-1) for single correlation
@@ -227,13 +229,16 @@ for n=1:Nang
         % uncomment if statement and below comments for single correlation
 %         if pnum == 1
         % perform cross correlation for packet start
-        [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex))',decode_preamble');
-        [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex))',decode_preamble');
+        [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
+        [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
         % removes tails of correlation 
         corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
         abs_corr = abs(corr_tot);
         % find maximum correlation and begin decoding from there
         [preamble_max,preamble_start] = max(abs_corr); 
+        if pnum == 1
+            global_preamble_start = begdex+preamble_start-1;
+        end
 %         end
 %         
 %         begdex = begdex + floor((pnum-1) / N_packets1)*packet_delay*fs;
@@ -282,7 +287,7 @@ for n=1:Nang
         if (mod(fm0_samp,2) == 0)
             % should always enter this branch, camera_decode written by
             % saad and waleed
-            bits = camera_decode(data_estimates(beg_data_dex:end_data_dex)',fm0_samp,N_data_bits);
+            bits = camera_decode(data_estimates(beg_data_dex:end_data_dex).',fm0_samp,N_data_bits);
         else
             error("fm0_samp is not divisible by 2");
         end
@@ -314,6 +319,10 @@ for n=1:Nang
     min_BER = 1/N_tot_bits;
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
     BER(BER == 0) = min_BER;
+
+    load jack_data_vanatta.mat;
+
+    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',complete_bits,1,624,1.126e-4,weights,1);
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
