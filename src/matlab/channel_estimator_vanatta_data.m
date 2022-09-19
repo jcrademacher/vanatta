@@ -67,7 +67,7 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [0];
+angles = [-15.3];
 Nang = length(angles);
 verbose = 0;
 do_plots = 1;
@@ -78,7 +78,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 09-15-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 09-16-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -91,7 +91,7 @@ for n=1:Nang
         ang_str = strrep(ang_str,".",",");
     end
     
-    filename = 'rx_single_chest_pab_011B_stag9cm_7cm_sp_2,9mtxfmr_+180deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_300mVpp_0.dat';
+    filename = 'rx_vanatta4_chest_pab_011B_013A_009A_012A_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_11m_10m_hphydro_430mVpp_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -101,21 +101,21 @@ for n=1:Nang
     rx_len = length(sig);
     % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
     rx_signals = zeros(1,rx_len);
-    rx_signals(1,:) = real(sig)-imag(sig);
+    rx_signals(1,:) = real(sig);
     
     %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
     % have had some issues with it in the past and since RX and TX USRPs are 
     % synchronized in most experiments directly using the known fc works fine
     
-%     Nfft = 100*fs;
-%     rx_fft = fft(rx_signals',Nfft)';
-%     fft_mag = abs(rx_fft);
-%     max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
-%     [maxval,mindex] = max(fft_mag(:,max_search),[],2); % max in each row
-%     carrier_phase = angle(rx_fft(max_search(mindex)'));
-%     carrier_freq = fs/Nfft*max_search(mindex)';
+    Nfft = 500*fs;
+    rx_fft = fft(rx_signals',Nfft)';
+    fft_mag = abs(rx_fft);
+    max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
+    [maxval,mindex] = max(fft_mag(:,max_search),[],2); % max in each row
+    carrier_phase = angle(rx_fft(max_search(mindex)'));
+    carrier_freq = fs/Nfft*max_search(mindex)';
     
-    carrier_freq = fc;
+%     carrier_freq = fc;
     carrier_phase = 0;
     
      % generate the time series and local oscillator
@@ -218,7 +218,7 @@ for n=1:Nang
         % remove +sample_delay_adj*(pnum-1) for single correlation
         begdex = (pnum-1)*packet_len+1+packet_delay_adj*(pnum-1);
         endex = pnum*packet_len+packet_delay_adj*(pnum-1);
-        end_preamble_dex = (pnum-1)*packet_len+preamble_len+packet_delay_adj*(pnum-1);
+        end_preamble_dex = (pnum-1)*packet_len+floor(1.45*preamble_len)+packet_delay_adj*(pnum-1);
 
         beg_data_dex = (pnum-1)*data_len+1;
         end_data_dex = pnum*data_len+fm0_samp;
@@ -248,7 +248,7 @@ for n=1:Nang
             
             plot(abs_corr/30);
             hold on;
-            plot(real(rx_baseband(begdex:end_preamble_dex)));
+            plot(10*real(rx_baseband(begdex:end_preamble_dex)));
             plot([zeros(1,preamble_start) decode_preamble/500]);
         end
         %xlim([0 1000]);
@@ -321,8 +321,7 @@ for n=1:Nang
     BER(BER == 0) = min_BER;
 
     load jack_data_vanatta.mat;
-
-    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',complete_bits,100,525,1.126e-4,0,1);
+    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',complete_bits,100,525,1.4e-4,0,1);
 end
 %% PLOT VS ANGLE
 if length(angles) > 1

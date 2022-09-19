@@ -31,7 +31,7 @@ Fs = 2e5;
 ds_ind = 1;%1;%5;
 y_rx = downsample(y_rx,ds_ind);
 %y_rx = y_rx(1:end-0.1*Fs);
-f_factor = 0.999;%[0.98 0.983 0.989 0.999 1];
+f_factor = 0.99;%[0.98 0.983 0.989 0.999 1];
 %num_pkt_ind = 1;%[90:1:105];
 ref_tap = 1;ff_tap = 203;%53;%23; 
 fb_tap =100;%200;%100;

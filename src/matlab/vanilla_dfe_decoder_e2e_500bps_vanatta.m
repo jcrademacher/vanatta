@@ -2,10 +2,10 @@ clear all;
 clc;
 Fs = 2e5;
 %path = '/Users/nazishnaeem/uhd/build/examples/';
-path  = '';
+path  = ['../../rx_outputs/River PAB Van Atta 4 09-16-2022/'];
 %filename = 'rx_DFE_test_100m_500bps0.dat';
 %filename = 'rx_h_3m_b_3m_t_500_6July_3_4_power0.dat';
-filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_stag9cm_7cm_sp_2,9mtxfmr_+0deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_8m_7m_hphydro_0.dat';
+filename = 'rx_single_chest_pab_012A_stag9cm_7cm_sp_2,9mtxfmr_+0deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_400mVpp_0.dat';
 % filenghahgme = 'test0.dat';
 data2 = read_complex_binary([path filename]);
 
@@ -92,7 +92,7 @@ for i = 1:length(xx)/chunk:length(xx)
     i
     
 end
-
+% 
 final_hpf1 = my_lpf(final_hpf.', lpb,lsb,Fs);
 
 final_hpf = final_hpf1;
@@ -155,7 +155,7 @@ disp("Before DFE");
 
 clearvars -except y_rx weights
 num_pkt_ind =100;
-num_testing_pkts = 500;
+num_testing_pkts = 350;
 Fs = 2e5;
 W = 0;
 %W = weights;
@@ -167,7 +167,7 @@ f_factor = 0.999;%[0.98 0.983 0.989 0.999 1];
 %num_pkt_ind = 1;%[90:1:105];
 ref_tap = 1;ff_tap = 203;%53;%23; 
 fb_tap =100;%200;%100;
-const_lvl =3.126e-4;%max(real(y_rx(3.84e6:3.89e6)));%(1.0350e-04); %(3.126e-4);%3.126e-4; 
+const_lvl =1.126e-4;%max(real(y_rx(3.84e6:3.89e6)));%(1.0350e-04); %(3.126e-4);%3.126e-4; 
 %num_pkt_ind = 28*ones(1,20);
 Fs = 2e5/ds_ind;
 data_rate = 500;%5000;%2e3;
