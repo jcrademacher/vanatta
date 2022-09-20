@@ -1,5 +1,5 @@
 ./../../autorotator/build/autorotator -i --exec "cd ../rx_outputs/test && \
 ./../../build/rx_tx_samples_to_file --args 'addr0=192.168.10.19, addr1=192.168.10.6' \
---tx-file '../../tx_outputs/tone_20kfc_600mVpp_1sec.dat' \
+--tx-file '../../tx_outputs/tone_20kfc_600mVpp_10sec.dat' \
 --rx-file 'test_rx.dat' \
---nsamps 200000 --tx-rate 200000 --rx-rate 200000 --settling 5 --tx-channels '0' --rx-channels '1'"
+--nsamps 2000000 --tx-rate 200000 --rx-rate 200000 --settling 5 --tx-channels '0' --rx-channels '1'"
