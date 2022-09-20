@@ -35,9 +35,23 @@ packet_len = data_len+preamble_len;     % packet length in samples
 % number of packets to decode
 N_packets = 625;
 packet_delay = 0; % delay in between each packet
-N_tot_bits = N_data_bits*N_packets;
+N_tot_data_bits = N_data_bits*N_packets;
+N_tot_bits = (N_data_bits+N_preamble_bits)*N_packets;
 
 expected_data = real(read_complex_binary('../../tx_outputs/data_prbs_order=15_len=16_packets=625.dat'))';
+
+%%%%% RESHAPE EXPECTED DATA INTO FORMAT FOR DFE %%%%%%
+expected_data_packets = zeros(1,N_tot_bits);
+% 1 2 3 4 5 6 7 8 17 18 19 ... 
+preamble_index = mod(0:(N_tot_bits-1),N_preamble_bits+N_data_bits)<N_preamble_bits;
+expected_data_packets(logical(preamble_index)) = repmat(preamble,1,N_packets);
+
+data_index = (mod(0:(N_tot_bits-1),N_preamble_bits+N_data_bits)>=N_preamble_bits) ...
+            .* (mod(0:(N_tot_bits-1),N_preamble_bits+N_data_bits)<(N_data_bits+N_preamble_bits));
+expected_data_packets(logical(data_index)) = expected_data;
+dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_packets)';
+%%%%% END DFE DATA RESHAPE %%%%
+
 %expected_data = repmat(preamble,1,4*N_packets);
 
 % highpass filter cutoffs
@@ -316,12 +330,11 @@ for n=1:Nang
     h_median_snr_arr(n) = 10*log10(median(channel_snrs));
     noise_median_arr(n) = 10*log10(median(noise_power));
     
-    min_BER = 1/N_tot_bits;
+    min_BER = 1/N_tot_data_bits;
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
     BER(BER == 0) = min_BER;
 
-    load jack_data_vanatta.mat;
-    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',complete_bits,100,525,1.4e-4,0,1);
+    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(global_preamble_start:end).',dfe_expected_data,100,525,1.126e-4,0,1);
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
