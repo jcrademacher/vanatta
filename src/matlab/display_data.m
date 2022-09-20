@@ -1,14 +1,20 @@
-sig_0 = read_complex_binary('../../rx_outputs/River PAB Van Atta 4 09-16-2022/waleed_test_011B_500bps_160mVpp.dat');
-sig = real(sig_0(20:end));
+sig_0 = read_complex_binary('../../rx_outputs/test/test_rx.dat');
+sig = real(sig_0(24:end));
 fs = 2e5;
 t = [0:1/fs:length(sig)/fs-1/fs];
 figure(1);
-plot(t,sig);
+plot(sig);
+fc = 20e3;
 
-window_size = floor(length(sig)/5);
+window_size = floor(length(sig));
 window = chebwin(window_size);
+Nfft = fs*1000;
 
-[pxx,f] = pwelch(sig,window,[],[],fs,'power');
+[pxx,f] = pwelch(sig,window,[],Nfft,fs,'power');
+
+max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
+[maxval,mindex] = max(pxx(max_search)); % max in each row
+carrier_freq = fs/Nfft*max_search(mindex)';
 
 figure(2);
 hold on;
