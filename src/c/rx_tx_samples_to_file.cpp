@@ -115,6 +115,50 @@ void send_from_file(
     infile.close();
 }
 
+typedef std::function<uhd::sensor_value_t(const std::string&)> get_sensor_fn_t;
+
+// function that blocks until USRP is seen to be locked to reference
+bool check_locked_sensor(std::vector<std::string> sensor_names,
+    const char* sensor_name,
+    get_sensor_fn_t get_sensor_fn,
+    double setup_time)
+{
+    if (std::find(sensor_names.begin(), sensor_names.end(), sensor_name)
+        == sensor_names.end())
+        return false;
+
+    auto setup_timeout = std::chrono::steady_clock::now()
+                         + std::chrono::milliseconds(int64_t(setup_time * 1000));
+    bool lock_detected = false;
+
+    std::cout << boost::format("Waiting for \"%s\": ") % sensor_name;
+    std::cout.flush();
+
+    while (true) {
+        if (lock_detected) {
+            std::cout << " locked." << std::endl;
+            break;
+        }
+        if (get_sensor_fn(sensor_name).to_bool()) {
+            std::cout << "+";
+            std::cout.flush();
+            lock_detected = true;
+        } else {
+            if (std::chrono::steady_clock::now() > setup_timeout) {
+                std::cout << std::endl;
+                throw std::runtime_error(
+                    str(boost::format(
+                            "timed out waiting for consecutive locks on sensor \"%s\"")
+                        % sensor_name));
+            }
+            std::cout << "_";
+            std::cout.flush();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    std::cout << std::endl;
+    return true;
+}
 
 /***********************************************************************
  * recv_to_file function
@@ -231,9 +275,9 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     double tx_rate;
 
     // receive variables to be set by po
-    std::string rx_file, tx_file, type, rx_subdev, rx_channels;
+    std::string rx_file, tx_file, type, rx_subdev, rx_channels, sync;
     size_t total_num_samps, spb;
-    double rx_rate, settling;
+    double rx_rate, settling, lock_tm;
 
     // setup the program options
     po::options_description desc("Allowed options");
@@ -267,6 +311,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         ("otw", po::value<std::string>(&otw)->default_value("sc16"), "specify the over-the-wire sample mode")
         ("tx-channels", po::value<std::string>(&tx_channels)->default_value("0"), "which TX channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")
         ("rx-channels", po::value<std::string>(&rx_channels)->default_value("0"), "which RX channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")
+        ("sync", po::value<std::string>(&sync)->default_value("pps"), "time sync method. Specify pps or now")
+        ("lock-tm", po::value<double>(&lock_tm)->default_value(0.1), "time to wait in seconds before lock is detected, recommend 0.1")
         // ("tx-int-n", "tune USRP TX with integer-N tuning")
         // ("rx-int-n", "tune USRP RX with integer-N tuning")
     ;
@@ -320,9 +366,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         usrp->set_rx_subdev_spec(rx_subdev,rx_channel_nums[0]);
 
     // Lock mboard clocks
-    if (vm.count("ref")) {
+    if (ref == "external") {
         usrp->set_clock_source(ref);
-        usrp->set_time_source("_external_");
         // rx_usrp->set_clock_source(ref);
     }
 
@@ -356,124 +401,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
               << std::endl
               << std::endl;
 
-    // // set the transmit center frequency
-    // if (not vm.count("tx-freq")) {
-    //     std::cerr << "Please specify the transmit center frequency with --tx-freq"
-    //               << std::endl;
-    //     return ~0;
-    // }
-
-    // for (size_t ch = 0; ch < tx_channel_nums.size(); ch++) {
-    //     size_t channel = tx_channel_nums[ch];
-    //     if (tx_channel_nums.size() > 1) {
-    //         std::cout << "Configuring TX Channel " << channel << std::endl;
-    //     }
-    //     std::cout << boost::format("Setting TX Freq: %f MHz...") % (tx_freq / 1e6)
-    //               << std::endl;
-    //     uhd::tune_request_t tx_tune_request(tx_freq);
-    //     if (vm.count("tx-int-n"))
-    //         tx_tune_request.args = uhd::device_addr_t("mode_n=integer");
-    //     tx_usrp->set_tx_freq(tx_tune_request, channel);
-    //     std::cout << boost::format("Actual TX Freq: %f MHz...")
-    //                      % (tx_usrp->get_tx_freq(channel) / 1e6)
-    //               << std::endl
-    //               << std::endl;
-
-    //     // set the rf gain
-    //     if (vm.count("tx-gain")) {
-    //         std::cout << boost::format("Setting TX Gain: %f dB...") % tx_gain
-    //                   << std::endl;
-    //         tx_usrp->set_tx_gain(tx_gain, channel);
-    //         std::cout << boost::format("Actual TX Gain: %f dB...")
-    //                          % tx_usrp->get_tx_gain(channel)
-    //                   << std::endl
-    //                   << std::endl;
-    //     }
-
-    //     // set the analog frontend filter bandwidth
-    //     if (vm.count("tx-bw")) {
-    //         std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % tx_bw
-    //                   << std::endl;
-    //         tx_usrp->set_tx_bandwidth(tx_bw, channel);
-    //         std::cout << boost::format("Actual TX Bandwidth: %f MHz...")
-    //                          % tx_usrp->get_tx_bandwidth(channel)
-    //                   << std::endl
-    //                   << std::endl;
-    //     }
-
-    //     // set the antenna
-    //     if (vm.count("tx-ant"))
-    //         tx_usrp->set_tx_antenna(tx_ant, channel);
-    // }
-
-    // for (size_t ch = 0; ch < rx_channel_nums.size(); ch++) {
-    //     size_t channel = rx_channel_nums[ch];
-    //     if (rx_channel_nums.size() > 1) {
-    //         std::cout << "Configuring RX Channel " << channel << std::endl;
-    //     }
-
-    //     // set the receive center frequency
-    //     if (not vm.count("rx-freq")) {
-    //         std::cerr << "Please specify the center frequency with --rx-freq"
-    //                   << std::endl;
-    //         return ~0;
-    //     }
-    //     std::cout << boost::format("Setting RX Freq: %f MHz...") % (rx_freq / 1e6)
-    //               << std::endl;
-    //     uhd::tune_request_t rx_tune_request(rx_freq);
-    //     if (vm.count("rx-int-n"))
-    //         rx_tune_request.args = uhd::device_addr_t("mode_n=integer");
-    //     rx_usrp->set_rx_freq(rx_tune_request, channel);
-    //     std::cout << boost::format("Actual RX Freq: %f MHz...")
-    //                      % (rx_usrp->get_rx_freq(channel) / 1e6)
-    //               << std::endl
-    //               << std::endl;
-
-    //     // set the receive rf gain
-    //     if (vm.count("rx-gain")) {
-    //         std::cout << boost::format("Setting RX Gain: %f dB...") % rx_gain
-    //                   << std::endl;
-    //         rx_usrp->set_rx_gain(rx_gain, channel);
-    //         std::cout << boost::format("Actual RX Gain: %f dB...")
-    //                          % rx_usrp->get_rx_gain(channel)
-    //                   << std::endl
-    //                   << std::endl;
-    //     }
-
-    //     // set the receive analog frontend filter bandwidth
-    //     if (vm.count("rx-bw")) {
-    //         std::cout << boost::format("Setting RX Bandwidth: %f MHz...") % (rx_bw / 1e6)
-    //                   << std::endl;
-    //         rx_usrp->set_rx_bandwidth(rx_bw, channel);
-    //         std::cout << boost::format("Actual RX Bandwidth: %f MHz...")
-    //                          % (rx_usrp->get_rx_bandwidth(channel) / 1e6)
-    //                   << std::endl
-    //                   << std::endl;
-    //     }
-
-    //     // set the receive antenna
-    //     if (vm.count("rx-ant"))
-    //         rx_usrp->set_rx_antenna(rx_ant, channel);
-    // }
-
-    // for the const wave, set the wave freq for small samples per period
-    // if (wave_freq == 0 and wave_type == "CONST") {
-    //     wave_freq = tx_usrp->get_tx_rate() / 2;
-    // }
-
-    // // error when the waveform is not possible to generate
-    // if (std::abs(wave_freq) > tx_usrp->get_tx_rate() / 2) {
-    //     throw std::runtime_error("wave freq out of Nyquist zone");
-    // }
-    // if (tx_usrp->get_tx_rate() / std::abs(wave_freq) > wave_table_len / 2) {
-    //     throw std::runtime_error("wave freq too small for table");
-    // }
-
-    // pre-compute the waveform values
-    // const wave_table_class wave_table(wave_type, ampl);
-    // const size_t step = std::lround(wave_freq / tx_usrp->get_tx_rate() * wave_table_len);
-    // size_t index = 0;
-
     // create a transmit streamer
     // linearly map channels (index0 = channel0, index1 = channel1, ...)
     uhd::stream_args_t stream_args("fc32", otw);
@@ -486,60 +413,71 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     //sstd::vector<std::complex<float>> buff(spb);
     // int num_channels = tx_channel_nums.size();
 
-    // Check Ref and LO Lock detect
-    std::vector<std::string> tx_sensor_names, rx_sensor_names;
-    tx_sensor_names = usrp->get_tx_sensor_names(0);
-    if (std::find(tx_sensor_names.begin(), tx_sensor_names.end(), "lo_locked")
-        != tx_sensor_names.end()) {
-        uhd::sensor_value_t lo_locked = usrp->get_tx_sensor("lo_locked", 0);
-        std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string()
-                  << std::endl;
-        UHD_ASSERT_THROW(lo_locked.to_bool());
-    }
-    rx_sensor_names = usrp->get_rx_sensor_names(0);
-    if (std::find(rx_sensor_names.begin(), rx_sensor_names.end(), "lo_locked")
-        != rx_sensor_names.end()) {
-        uhd::sensor_value_t lo_locked = usrp->get_rx_sensor("lo_locked", 0);
-        std::cout << boost::format("Checking RX: %s ...") % lo_locked.to_pp_string()
-                  << std::endl;
-        UHD_ASSERT_THROW(lo_locked.to_bool());
+    // // Check Ref and LO Lock detect
+    
+    // tx_sensor_names = usrp->get_tx_sensor_names(0);
+    // if (std::find(tx_sensor_names.begin(), tx_sensor_names.end(), "lo_locked")
+    //     != tx_sensor_names.end()) {
+    //     uhd::sensor_value_t lo_locked = usrp->get_tx_sensor("lo_locked", 0);
+    //     std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string()
+    //               << std::endl;
+    //     UHD_ASSERT_THROW(lo_locked.to_bool());
+    // }
+    // rx_sensor_names = usrp->get_rx_sensor_names(0);
+    // if (std::find(rx_sensor_names.begin(), rx_sensor_names.end(), "lo_locked")
+    //     != rx_sensor_names.end()) {
+    //     uhd::sensor_value_t lo_locked = usrp->get_rx_sensor("lo_locked", 0);
+    //     std::cout << boost::format("Checking RX: %s ...") % lo_locked.to_pp_string()
+    //               << std::endl;
+    //     UHD_ASSERT_THROW(lo_locked.to_bool());
+    // }
+    
+    // std::vector<std::string> tx_sensor_names, rx_sensor_names;
+    // tx_sensor_names = usrp->get_mboard_sensor_names(0);
+    // rx_sensor_names = usrp->get_mboard_sensor_names(0);
+
+
+    // if ((ref == "mimo")
+    //     and (std::find(tx_sensor_names.begin(), tx_sensor_names.end(), "mimo_locked")
+    //             != tx_sensor_names.end())) {
+    //     uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", 0);
+    //     std::cout << boost::format("Checking TX: %s ...") % mimo_locked.to_pp_string()
+    //               << std::endl;
+    //     UHD_ASSERT_THROW(mimo_locked.to_bool());
+    // }
+    size_t num_mboards = usrp->get_num_mboards();
+
+    if (ref == "external") {
+
+        // check RX reference
+        for(size_t mboard = 0; mboard < num_mboards; ++mboard) {
+            std::cout << boost::format("Locking mboard %d...") % mboard << std::endl;
+            // uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", mboard);
+            // std::cout << boost::format("Checking TX: %s ...") % ref_locked.to_pp_string()
+            //       << std::endl;
+            // UHD_ASSERT_THROW(ref_locked.to_bool());
+
+            check_locked_sensor(usrp->get_mboard_sensor_names(mboard),
+                "ref_locked",
+                [usrp, mboard](const std::string& sensor_name) {
+                    return usrp->get_mboard_sensor(sensor_name, mboard);
+                },lock_tm);
+        }
     }
 
-    tx_sensor_names = usrp->get_mboard_sensor_names(0);
-    if ((ref == "mimo")
-        and (std::find(tx_sensor_names.begin(), tx_sensor_names.end(), "mimo_locked")
-                != tx_sensor_names.end())) {
-        uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", 0);
-        std::cout << boost::format("Checking TX: %s ...") % mimo_locked.to_pp_string()
-                  << std::endl;
-        UHD_ASSERT_THROW(mimo_locked.to_bool());
-    }
-    if ((ref == "external")
-        and (std::find(tx_sensor_names.begin(), tx_sensor_names.end(), "ref_locked")
-                != tx_sensor_names.end())) {
-        uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", 0);
-        std::cout << boost::format("Checking TX: %s ...") % ref_locked.to_pp_string()
-                  << std::endl;
-        UHD_ASSERT_THROW(ref_locked.to_bool());
-    }
+    // if ((ref == "mimo")
+    //     and (std::find(rx_sensor_names.begin(), rx_sensor_names.end(), "mimo_locked")
+    //             != rx_sensor_names.end())) {
+    //     uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", 0);
+    //     std::cout << boost::format("Checking RX: %s ...") % mimo_locked.to_pp_string()
+    //               << std::endl;
+    //     UHD_ASSERT_THROW(mimo_locked.to_bool());
+    // }
 
-    rx_sensor_names = usrp->get_mboard_sensor_names(0);
-    if ((ref == "mimo")
-        and (std::find(rx_sensor_names.begin(), rx_sensor_names.end(), "mimo_locked")
-                != rx_sensor_names.end())) {
-        uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", 0);
-        std::cout << boost::format("Checking RX: %s ...") % mimo_locked.to_pp_string()
-                  << std::endl;
-        UHD_ASSERT_THROW(mimo_locked.to_bool());
-    }
-    if ((ref == "external")
-        and (std::find(rx_sensor_names.begin(), rx_sensor_names.end(), "ref_locked")
-                != rx_sensor_names.end())) {
-        uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", 0);
-        std::cout << boost::format("Checking RX: %s ...") % ref_locked.to_pp_string()
-                  << std::endl;
-        UHD_ASSERT_THROW(ref_locked.to_bool());
-    }
+        // uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", 0);
+        // std::cout << boost::format("Checking RX: %s ...") % ref_locked.to_pp_string()
+        //           << std::endl;
+        // UHD_ASSERT_THROW(ref_locked.to_bool());
 
     if (total_num_samps == 0) {
         std::signal(SIGINT, &sig_int_handler);
@@ -549,8 +487,17 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     // reset usrp time to prepare for transmit/receive
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
 
-    usrp->set_time_next_pps(uhd::time_spec_t(0.0));
-    std::this_thread::sleep_for(std::chrono::seconds(1)); // wait for pps sync pulse
+    // set pps
+    if(sync == "pps") {
+        usrp->set_time_source("external");
+        usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // wait for pps sync pulse
+    }
+    else if(sync == "now") {
+        // This is not a true time lock, the devices will be off by a few RTT.
+        // Rather, this is just to allow for demonstration of the code below.
+        usrp->set_time_now(uhd::time_spec_t(0.0));
+    }
 
     uhd::time_spec_t time_spec = uhd::time_spec_t(usrp->get_time_now()+uhd::time_spec_t(settling));
 
