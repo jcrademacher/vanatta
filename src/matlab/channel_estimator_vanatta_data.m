@@ -4,7 +4,7 @@ fb = 500;
 c = 1500;
 wc = 2*pi*fc;
 
-init_delay = 50e-3;
+init_delay = 40e-3;%50e-3;
 
 dd = 3;
 du = 2;
@@ -84,10 +84,10 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-15.3];
+angles = round([-180:5:180]/0.9)*0.9;
 Nang = length(angles);
-verbose = 0;
-do_plots = 1;
+verbose = 1;
+do_plots = 0;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
@@ -95,20 +95,30 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 09-16-2022/';
+root = '../../rx_outputs/River PAB Directivity 09-21-2022/';
 
 for n=1:Nang
     ang = angles(n);
-    ang_str = num2str(ang);
-    if ang >= 0
-        ang_str = strcat("+",ang_str);
+    
+    if verbose
+        disp("angle=");
+        disp(ang);
     end
+
+    ang_str = num2str(ang);
+%     if ang >= 0
+%         ang_str = strcat("+",ang_str);
+%     end
 
     if rem(ang,1) ~= 0
         ang_str = strrep(ang_str,".",",");
     end
+
+    if rem(ang,1) == 0
+        ang_str = strcat(ang_str,',0');
+    end
     
-    filename = 'rx_vanatta4_chest_pab_011B_013A_009A_012A_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_11m_10m_hphydro_430mVpp_0.dat';
+    filename = 'rx_single_chest_pab_011B_nodamp_2,9mtxfmr_?deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_012A_purui_new_tx_2m_1m_hphydro_500mVpp_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -239,7 +249,7 @@ for n=1:Nang
     end
         
     % cutoff rx_baseband where it begins
-    rx_baseband = rx_baseband(global_preamble_start-fm0_half_samp:end);
+    rx_baseband = rx_baseband(global_preamble_start-fm0_samp:end);
         
     if do_plots
         figure(4);
@@ -351,7 +361,7 @@ for n=1:Nang
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
     BER(BER == 0) = min_BER;
 
-    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(fm0_half_samp:end).',dfe_expected_data,100,525,1.126e-4,0,1);
+    %[weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(fm0_samp:end).',dfe_expected_data,100,525,1.126e-4,0,1);
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
