@@ -1,9 +1,9 @@
 %preamble = [0 0 0 1 1 1 0 1 1 0 1];
-preamble = [0 0 1 1 1 0 1 0];
+preamble = [0 0 1 1 1 0 1 0 0 1 0 0 0 1 1 1];
 %preamble_fm0 = [0 1 0 1 0 0 1 1 0 0 1 0 1 1 0 1];
 
 N_preamble_bits = length(preamble);
-N_data_bits = 16;
+N_data_bits = 8;
 N_packet_bits = N_data_bits+N_preamble_bits;
 prbs_order = 15;
 
@@ -11,13 +11,13 @@ init_delay = 50e-3;
 
 fc = 18.5e3;
 fs = 2e5;
-fb = 1000;
+fb = 500;
 fb_preamble = fb;
 
 fm0_samp = fs/fb;
 fm0_samp_preamble = fs/fb_preamble;
 
-N_packets = 625;
+N_packets = 500;
 [next_data,seed] = prbs(prbs_order,N_data_bits);
 
 time_to_tx = N_packet_bits*N_packets/fb;

@@ -22,6 +22,8 @@ tau_u = du / c;
 fm0_samp = fs/fb;
 
 preamble = [0 0 1 1 1 0 1 0];
+%preamble = [0 0 1 1 1 0 1 0 0 1];
+%preamble = [0 0 1 1 1 0 1 0 0 1 0 0 0 1 1 1];
 expected_preamble = generate_fm0_sig2(preamble,fm0_samp);
     
 N_preamble_bits = length(preamble);
@@ -38,7 +40,7 @@ packet_delay = 0; % delay in between each packet
 N_tot_data_bits = N_data_bits*N_packets;
 N_tot_bits = (N_data_bits+N_preamble_bits)*N_packets;
 
-expected_data = real(read_complex_binary('../../tx_outputs/data_prbs_order=15_len=16_packets=625.dat'))';
+expected_data = real(read_complex_binary(strrep('../../tx_outputs/data_prbs_order=15_len=?_packets=625.dat','?',num2str(N_data_bits))))';
 
 %%%%% RESHAPE EXPECTED DATA INTO FORMAT FOR DFE %%%%%%
 expected_data_packets = zeros(1,N_tot_bits);
@@ -84,10 +86,10 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = round([-180:5:180]/0.9)*0.9;
+angles = [0];%round([-180:5:180]/0.9)*0.9;
 Nang = length(angles);
-verbose = 1;
-do_plots = 0;
+verbose = 0;
+do_plots = 1;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
@@ -95,7 +97,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Directivity 09-21-2022/';
+root = '../../rx_outputs/River PAB Van Atta 4 09-23-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -118,7 +120,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_single_chest_pab_011B_damp_2,9mtxfmr_?deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_012A_purui_new_tx_2m_1m_hphydro_500mVpp_0.dat';
+    filename = 'rx_vanatta4_chest_pab_011B_013A_012A_009A_stag9cm_7cm_sp_2,9mtxfmr_+0deg_nx5_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_450mVpp_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -290,7 +292,7 @@ for n=1:Nang
             plot(abs_corr/30);
             hold on;
             plot(10*real(rx_baseband(begdex:end_preamble_dex)));
-            plot([zeros(1,preamble_start) decode_preamble/500]);
+            plot([zeros(1,preamble_start) decode_preamble/100]);
         end
         %xlim([0 1000]);
 
@@ -361,7 +363,7 @@ for n=1:Nang
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
     BER(BER == 0) = min_BER;
 
-    %[weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(fm0_samp:end).',dfe_expected_data,100,525,1.126e-4,0,1);
+    %[weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(fm0_samp:end).',dfe_expected_data,100,400,1.126e-4,0,1);
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
