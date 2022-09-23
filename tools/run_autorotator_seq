@@ -1,0 +1,5 @@
+./../../autorotator/build/autorotator --exec "cd ../rx_outputs/River\ PAB\ Directivity\ 09-21-2022 && \
+./../../build/rx_tx_samples_to_file --args 'addr0=192.168.10.19' \
+--tx-file '../../tx_outputs/baseband_fm0_625packets_0,5kbps_Npreamblebits=8_Ndatabits=16.dat' \
+--rx-file 'rx_single_chest_pab_011B_damp_2,9mtxfmr_?deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_012A_purui_new_tx_2m_1m_hphydro_500mVpp_0.dat' \
+--nsamps 7000000 --tx-rate 200000 --rx-rate 200000 --settling 5 --tx-channels '0' --rx-channels '0'" --start-angle -180 --end-angle 180 --step 5
