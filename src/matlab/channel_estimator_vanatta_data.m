@@ -118,7 +118,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_single_chest_pab_011B_nodamp_2,9mtxfmr_?deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_012A_purui_new_tx_2m_1m_hphydro_500mVpp_0.dat';
+    filename = 'rx_single_chest_pab_011B_damp_2,9mtxfmr_?deg_mosfet_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_012A_purui_new_tx_2m_1m_hphydro_500mVpp_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
