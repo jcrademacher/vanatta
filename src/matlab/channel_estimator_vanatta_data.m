@@ -120,7 +120,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_vanatta4_chest_pab_011B_013A_012A_009A_stag9cm_7cm_sp_2,9mtxfmr_+0deg_nx5_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_6m_5m_hphydro_450mVpp_0.dat';
+    filename = 'rx_vanatta4_chest_pab_011B_013A_012A_009A_stag9cm_7cm_sp_2,9mtxfmr_+180deg_nx5_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_16m_15m_hphydro_450mVpp_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -269,8 +269,6 @@ for n=1:Nang
         beg_bit_dex = (pnum-1)*N_data_bits+1;
         end_bit_dex = pnum*N_data_bits;
         
-        % uncomment if statement and below comments for single correlation
-%         if pnum == 1
         % perform cross correlation for packet start
         [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
         [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
@@ -279,13 +277,10 @@ for n=1:Nang
         abs_corr = abs(corr_tot);
         % find maximum correlation and begin decoding from there
         [preamble_max,preamble_start] = max(abs_corr); 
-%         if pnum == 1
-%             global_preamble_start = begdex+preamble_start-1;
-%         end
-%         end
-%         
-%         begdex = begdex + floor((pnum-1) / N_packets1)*packet_delay*fs;
-%         endex = endex + floor((pnum-1) / N_packets1)*packet_delay*fs;
+        
+        %%% comment out for correlation at evey packet
+        preamble_start = fm0_samp;
+
         if do_plots
             clf;
             
@@ -295,6 +290,10 @@ for n=1:Nang
             plot([zeros(1,preamble_start) decode_preamble/100]);
         end
         %xlim([0 1000]);
+
+%         if pnum == 207
+%             test = 1;
+%         end
 
         % slice out data packet found from correlation
         packet = rx_baseband(begdex+preamble_start-1-fm0_half_samp:endex+preamble_start-1+fm0_half_samp);
