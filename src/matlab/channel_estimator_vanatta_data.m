@@ -4,7 +4,7 @@ fb = 500;
 c = 1500;
 wc = 2*pi*fc;
 
-init_delay = 40e-3;%50e-3;
+init_delay = 50e-3;%50e-3;
 
 dd = 3;
 du = 2;
@@ -65,8 +65,8 @@ fpb1 = fb/2;
 dfac = 1;   % donwsampling factor
 
 % lowpass filter cutoffs
-fpb1_lp = 5*fb;
-fsb1_lp = 7*fb;
+fpb1_lp = 3*fb;
+fsb1_lp = 5*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
@@ -86,7 +86,7 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [0];%round([-180:5:180]/0.9)*0.9;
+angles = [0];
 Nang = length(angles);
 verbose = 0;
 do_plots = 1;
@@ -97,7 +97,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB Van Atta 4 09-23-2022/';
+root = '../../rx_outputs/River PAB2 Van Atta 8 11-01-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -120,7 +120,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_vanatta4_chest_pab_011B_013A_012A_009A_stag9cm_7cm_sp_2,9mtxfmr_+180deg_nx5_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_16m_15m_hphydro_450mVpp_0.dat';
+    filename = 'rx_vanatta8_chest_diff_pab2_txfmr_0,0deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_tx_14m_13m_hphydro_31Vrms_usrp5_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -144,7 +144,7 @@ for n=1:Nang
     carrier_phase = angle(rx_fft(max_search(mindex)'));
     carrier_freq = fs/Nfft*max_search(mindex)';
     
-%     carrier_freq = fc;
+    %carrier_freq = fc;
     carrier_phase = 0;
     
      % generate the time series and local oscillator
@@ -158,6 +158,7 @@ for n=1:Nang
     % lowpass filtering both removes the 2fc term and anti-alias filters
     % filtfilt used for 0 group delay filtering
     rx_baseband = fftfilt(lpFilt,rx_baseband')';
+    %rx_baseband = fftfilt(lpFilt,rx_baseband')';
     % rx_baseband = rx_baseband(gdlp+1:end);
     
     expected_preamble = filtfilt(lpFilt,expected_preamble')';
@@ -165,6 +166,7 @@ for n=1:Nang
     % remove DC mean
     % rx_baseband = rx_baseband - mean(rx_baseband);
     rx_baseband = fftfilt(hpFilt,rx_baseband')';
+    %rx_baseband = fftfilt(hpFilt,rx_baseband')';
     % rx_baseband = rx_baseband(gdhp+1:end);
     %expected_preamble1 = fftfilt(hpFilt,expected_preamble1);
     
@@ -222,6 +224,7 @@ for n=1:Nang
     % % estimates after channel projection for individual packets
     data_estimates = zeros(1,data_len*N_packets);
     decoded_data = zeros(1,N_packets*N_data_bits);
+    packet_estimates = zeros(1,packet_len*N_packets);
     
     channel_estimates = zeros(1,N_packets);
     channel_snrs = zeros(1,N_packets);
@@ -278,7 +281,7 @@ for n=1:Nang
         % find maximum correlation and begin decoding from there
         [preamble_max,preamble_start] = max(abs_corr); 
         
-        %%% comment out for correlation at evey packet
+        %%% comment out for correlation at every packet
         preamble_start = fm0_samp;
 
         if do_plots
@@ -296,7 +299,7 @@ for n=1:Nang
 %         end
 
         % slice out data packet found from correlation
-        packet = rx_baseband(begdex+preamble_start-1-fm0_half_samp:endex+preamble_start-1+fm0_half_samp);
+        packet = rx_baseband(begdex+preamble_start-fm0_half_samp:endex+preamble_start+fm0_half_samp);
         % remove the mean
         packet = packet - mean(packet(1:preamble_len));
         % slice out preamble
@@ -324,7 +327,8 @@ for n=1:Nang
         
         % extract estimate of data only
         data_estimates(beg_data_dex:end_data_dex) = packet_data.*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;
-        
+        packet_estimates(begdex:endex) = packet(fm0_half_samp+1:end-fm0_half_samp).*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;   
+
         % decode packet
         if (mod(fm0_samp,2) == 0)
             % should always enter this branch, camera_decode written by
@@ -362,7 +366,14 @@ for n=1:Nang
     BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
     BER(BER == 0) = min_BER;
 
-    %[weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(rx_baseband(fm0_samp:end).',dfe_expected_data,100,400,1.126e-4,0,1);
+    rx_baseband = rx_baseband(fm0_samp+1:N_tot_bits*fm0_samp+fm0_samp);
+    %%
+    N_training = 120;
+    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,10);
+    
+    N_training = 1;
+    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,10);
+   
 end
 %% PLOT VS ANGLE
 if length(angles) > 1

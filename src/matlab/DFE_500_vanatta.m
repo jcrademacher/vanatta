@@ -1,4 +1,4 @@
-function [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(y_rx,complete_bits,num_pkt_ind,num_testing_pkts,const_lvl,W,AAT)
+function [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(y_rx,complete_bits,num_pkt_ind,num_testing_pkts,const_lvl,W,AAT,data_rate,Fs,ds_ind)
 % y_rx = raw data with first sample being first sample of first bit (column
 % vector)
 % complete_bits = all bits in raw form (0,1) sequence, each row is packet
@@ -24,22 +24,25 @@ function [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(y_rx,complete
 %   Detailed explanation goes here
 %num_pkt_ind =1;
 %num_testing_pkts = 600;
-Fs = 2e5;
 %W = 0;
 %W = weights;
 %load jack_data_vanatta;
-ds_ind = 1;%1;%5;
+
+
 y_rx = downsample(y_rx,ds_ind);
 %y_rx = y_rx(1:end-0.1*Fs);
-f_factor = 0.99;%[0.98 0.983 0.989 0.999 1];
+f_factor = 0.999;%[0.98 0.983 0.989 0.999 1];
 %num_pkt_ind = 1;%[90:1:105];
-ref_tap = 1;ff_tap = 203;%53;%23; 
-fb_tap =100;%200;%100;
+
 %const_lvl =1.126e-4;%max(real(y_rx(3.84e6:3.89e6)));%(1.0350e-04); %(3.126e-4);%3.126e-4; 
 %num_pkt_ind = 28*ones(1,20);
-Fs = 2e5/ds_ind;
-data_rate = 500;%5000;%2e3;
+Fs = Fs/ds_ind;
+
 fm0samp = Fs/data_rate;
+ref_tap = 1;
+ff_tap = fm0samp/2+3;%53;%23; 
+
+fb_tap = fm0samp/4+3;%200;%100;
 pkt_bits = 24; %50 for waleed 24 for jack
 pre_bits = 8; % 10 for waleed 8 for jack
 pkt_size = pkt_bits*fm0samp;
@@ -136,7 +139,7 @@ for ff = f_factor
              act_bits_b = [act_bits_b bits_b(pre_bits+1:end-1)];
              ber_b(cnt) = sum(abs(bits_b(pre_bits+1:end-1) - dec_bits))/length(dec_bits);
              snr_vec = [snr_vec snr_basis];
-             disp(['Packet BER (Before): ' num2str(ber_b(cnt))]);
+             %disp(['Packet BER (Before): ' num2str(ber_b(cnt))]);
              %disp(['Packet SNR in dB   : ' num2str(snr_basis)]);
 
              %% After Equalization
@@ -148,7 +151,7 @@ for ff = f_factor
              bits_a = bit_vec_tx((kk-1)*pkt_bits+1:(kk-1)*pkt_bits+pkt_bits);
              act_bits_a = [act_bits_a bits_a(pre_bits+1:end-1)];
              ber_a(cnt) = sum(abs(bits_a(pre_bits+1:end-1) - dec_bits))/length(dec_bits);
-             disp(['Packet BER (After): ' num2str(ber_a(cnt))]);
+             %disp(['Packet BER (After): ' num2str(ber_a(cnt))]);
              cnt =cnt + 1;
          end
 
