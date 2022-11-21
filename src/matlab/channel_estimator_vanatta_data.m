@@ -97,7 +97,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Van Atta 8 11-01-2022/';
+root = '../../rx_outputs/River PAB2 Van Atta 6 10-12-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -120,7 +120,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_vanatta8_chest_diff_pab2_txfmr_0,0deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_tx_14m_13m_hphydro_31Vrms_usrp5_0.dat';
+    filename = 'rx_vanatta6_chest_pab2_txfmr_0,0deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_11m_10m_hphydro_39Vrms_0_lowered.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
