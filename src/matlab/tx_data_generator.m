@@ -11,7 +11,7 @@ init_delay = 50e-3;
 
 fc = 18.5e3;
 fs = 2e5;
-fb = 1e3;
+fb = 500;
 fb_preamble = fb;
 
 fm0_samp = fs/fb;

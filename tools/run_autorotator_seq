@@ -1,5 +1,5 @@
-./../../autorotator/build/autorotator --exec "cd ../rx_outputs/River\ PAB2\ Tests\ 10-10-2022 && \
-./../../build/rx_tx_samples_to_file --args 'addr0=192.168.10.19' \
+./../../autorotator/build/autorotator --exec "cd ../rx_outputs/River\ PAB2\ Proposal\ Experiments\ 11-09-2022 && \
+./../../build/rx_tx_samples_to_file --args 'addr0=192.168.10.5' \
 --tx-file '../../tx_outputs/baseband_fm0_625packets_0,5kbps_Npreamblebits=8_Ndatabits=16.dat' \
---rx-file 'rx_array2_chest_pab2_003A_002A_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_new_tx_4m_3m_hphydro_81Vrms_1.dat' \
---nsamps 7000000 --tx-rate 200000 --rx-rate 200000 --settling 5 --tx-channels '0' --rx-channels '0' --rx-subdev 'A:AB'" --start-angle -90 --end-angle 91 --step 10 
+--rx-file 'rx_single_chest_diff_004B_pab2_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat' \
+--nsamps 7000000 --tx-rate 200000 --rx-rate 200000 --settling 5 --tx-channels '0' --rx-channels '0' --rx-subdev 'A:AB'" --start-angle -90 --end-angle 91 --step 15 
