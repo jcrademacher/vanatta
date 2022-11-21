@@ -1,5 +1,5 @@
-sig_0 = read_complex_binary('../../rx_outputs/River PAB2 Van Atta 8 11-01-2022/rx_vanatta8_chest_diff_pab2_txfmr_0,0deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_tx_11m_10m_hphydro_91Vrms_0.dat');
-sig = real(sig_0(24:end))-imag(sig_0(24:end));
+sig_0 = read_complex_binary('../../rx_outputs/River PAB2 Van Atta 8 11-09-2022/noise_test_diff_11m_10m_siggen_18,5k_purui_amp_61Vrms.dat');
+sig = real(sig_0(24:end));
 fs = 2e5;
 t = [0:1/fs:length(sig)/fs-1/fs];
 figure(1);

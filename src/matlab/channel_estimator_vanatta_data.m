@@ -86,10 +86,10 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [0];
+angles = round([-90:15:90]/0.9)*0.9;
 Nang = length(angles);
-verbose = 0;
-do_plots = 1;
+verbose = 1;
+do_plots = 0;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
@@ -97,7 +97,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Van Atta 8 11-01-2022/';
+root = '../../rx_outputs/River PAB2 Proposal Experiments 11-09-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -120,7 +120,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_vanatta8_chest_diff_pab2_txfmr_0,0deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_tx_14m_13m_hphydro_31Vrms_usrp5_0.dat';
+    filename = 'rx_single_chest_diff_004B_alone_pab2_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat';
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
@@ -130,7 +130,7 @@ for n=1:Nang
     rx_len = length(sig);
     % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
     rx_signals = zeros(1,rx_len);
-    rx_signals(1,:) = real(sig);
+    rx_signals(1,:) = real(sig)-imag(sig);
     
     %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
     % have had some issues with it in the past and since RX and TX USRPs are 
@@ -170,7 +170,7 @@ for n=1:Nang
     % rx_baseband = rx_baseband(gdhp+1:end);
     %expected_preamble1 = fftfilt(hpFilt,expected_preamble1);
     
-    rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp-40:end);
+    rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp-fm0_samp:end);
     
     sig_sec = rx_baseband;
 %     Nfft = 2^nextpow2(length(sig_sec));
@@ -368,11 +368,11 @@ for n=1:Nang
 
     rx_baseband = rx_baseband(fm0_samp+1:N_tot_bits*fm0_samp+fm0_samp);
     %%
-    N_training = 120;
-    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,10);
-    
-    N_training = 1;
-    [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,10);
+%     N_training = 120;
+%     [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,10);
+%     
+%     N_training = 1;
+%     [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,10);
    
 end
 %% PLOT VS ANGLE

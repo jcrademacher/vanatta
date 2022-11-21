@@ -1,12 +1,12 @@
 
-sig = real(read_complex_binary('../../rx_outputs/River PAB Channel Estimate 07-28-2022/60Hz_test_rx_tx_u2b_0.dat'));
+sig = real(read_complex_binary('../../rx_outputs/River PAB2 Van Atta 8 11-09-2022/noise_test_diff_11m_10m_tx_off.dat'));
 fs = 2e5;
 
-sig = sig(16e4:end);
+%sig = sig(16e4:end);
 
 t = [0:1/fs:length(sig)/fs-1/fs];
 
-window_size = floor(length(sig)/5);
+window_size = floor(length(sig)/100);
 window = chebwin(window_size,120);
 Nfft = 2^nextpow2(window_size);
 
@@ -30,9 +30,24 @@ offsets = [ceil(3*rbw/10)*10:20:5e3];
 carrier_freq = f(carrier_index);
 
 phasenoise = 10*log10(pxx(round(carrier_index+offsets/fs*Nfft))/carrier_val);
+% compute FM0 spectrum
+fb = 500;
+Nbits = 1024;
+
+code = randi([0 1],1,Nbits); 
+fm0_seq = generate_fm0_sig2(code,fs/fb);
+% t = [0:1/fs:N_bits/fb-1/fs];
+
+window_size = floor(length(fm0_seq)/10);
+window = chebwin(window_size);
+Nfft = 2^nextpow2(window_size);
+
+[pxx_fm0,f] = pwelch(fm0_seq,window,[],[],fs);
+
 figure(3);
 hold on;
 plot(offsets,phasenoise);
+%plot(f(1:floor(offsets(end)*Nfft/fs)),10*log10(pxx_fm0(1:floor(offsets(end)*Nfft/fs))));
 grid on;
 grid minor;
 xlabel("Freq Offset from Carrier (Hz)");

@@ -1,7 +1,7 @@
 fs = 2e5;
 N_bits = 1024;
 
-fb = 1e3;
+fb = 250;
 Tb = 1/fb;
 
 code = randi([0 1],1,N_bits); 
@@ -17,8 +17,8 @@ t = [0:1/fs:N_bits/fb-1/fs];
 seq = fm0_seq;
 
 %% MILLER
-m=4;
-blf = fb;
+m=2;
+blf = fb*m;
 miller_seq = miller_encode(code,m,blf,fs);
 
 lpFilt = designfilt('lowpassfir' ...
@@ -26,7 +26,14 @@ lpFilt = designfilt('lowpassfir' ...
                     ,'StopbandFrequency',blf/2,'StopbandAttenuation' ...
                     ,30,'PassbandRipple',1,'DesignMethod','kaiserwin','SampleRate',fs);
 
-t = [0:1/fs:N_bits*m/fb-1/fs];
+% bpFilt = designfilt('bandpassfir' ...
+%                     ,'PassbandFrequency1',m/2*blf-2*blf/m ,'StopbandFrequency1',(0.5)*(m/2*blf-2*blf/m) ... 
+%                    ,'StopbandAttenuation1',30 ...
+%                    ,'PassbandFrequency2',m/2*blf+2*blf/m ,'StopbandFrequency2',(1.5)*(m/2*blf+2*blf/m) ... 
+%                    ,'StopbandAttenuation2',30, ...
+%                    'PassbandRipple',1,'DesignMethod','kaiserwin','SampleRate',fs);
+
+t = [0:1/fs:(length(miller_seq)-1)/fs];
 
 seq = miller_seq;
 
@@ -36,6 +43,7 @@ seq = miller_seq.*lo;
 
 seq = filtfilt(lpFilt,seq);
 
+
 %% PLOTTING
 
 
@@ -44,18 +52,20 @@ window = chebwin(t_window*fs);
 
 [pxx,f] = pwelch(seq,window,[],[],fs);
 
+[pxx_orig,f] = pwelch(miller_seq,window,[],[],fs);
+
 figure(1);
-subplot(2,1,1);
+subplot(3,1,1);
 %hold on
 plot(t,seq);
 hold on;
-plot(t,miller_seq);
+% plot(t,miller_seq);
 grid on;
 grid minor;
 xlabel("Time (s)");
 ylabel("Value");
 ylim([-1.5 1.5]);
-subplot(2,1,2);
+subplot(3,1,2);
 hold on
 plot(f/1e3,10*log10(pxx));
 % ylim([-50 0]);
@@ -64,6 +74,16 @@ xlabel("Freq (kHz)");
 ylabel("Magnitude (dB20)");
 grid on;
 grid minor;
+
+subplot(3,1,3);
+
+% plot(f/1e3,10*log10(pxx_orig));
+% % ylim([-50 0]);
+% xlim([0 10]);
+% xlabel("Freq (kHz)");
+% ylabel("Magnitude (dB20)");
+% grid on;
+% grid minor;
 
 function out = rect(t)
     out = zeros(size(t),'like',t);
