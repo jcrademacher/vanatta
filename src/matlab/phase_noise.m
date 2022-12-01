@@ -1,18 +1,19 @@
 
-sig = real(read_complex_binary('../../rx_outputs/River PAB2 Van Atta 8 11-09-2022/noise_test_diff_11m_10m_tx_off.dat'));
+sig = real(read_complex_binary('../../rx_outputs/WHOI Experiments 11-30-2022/barge_noise_test_switching_off_amp_off_2m_2m_1m_sep_hphydro_0.dat'));
 fs = 2e5;
+sig = sig(24:end);
 
 %sig = sig(16e4:end);
 
 t = [0:1/fs:length(sig)/fs-1/fs];
 
-window_size = floor(length(sig)/100);
+window_size = floor(length(sig)/10);
 window = chebwin(window_size,120);
 Nfft = 2^nextpow2(window_size);
 
 rbw = enbw(window,fs);
 
-[pxx,f] = pwelch(sig,window,[],Nfft,fs);
+[pxx,f] = pwelch(sig,window,[],Nfft,fs,'power');
 pxx = pxx/50;
 
 % figure(1);

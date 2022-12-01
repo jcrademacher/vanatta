@@ -1,12 +1,13 @@
-sig_0 = read_complex_binary('../../rx_outputs/River PAB2 Van Atta 8 11-09-2022/noise_test_diff_11m_10m_siggen_18,5k_purui_amp_61Vrms.dat');
-sig = real(sig_0(24:end));
+sig_0 = read_complex_binary('../../rx_outputs/WHOI Experiments 12-01-2022/fixed_single_chest_006A_txfmr_nicktb_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat');
+sig = real(sig_0(24:end))-imag(sig_0(24:end));
 fs = 2e5;
 t = [0:1/fs:length(sig)/fs-1/fs];
 figure(1);
+hold on;
 plot(sig);
 fc = 18.5e3;
 
-window_size = floor(length(sig));
+window_size = floor(length(sig)/10);
 window = chebwin(window_size);
 Nfft = fs*10;
 

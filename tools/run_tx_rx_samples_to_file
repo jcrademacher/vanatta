@@ -1,7 +1,7 @@
-cd ../rx_outputs/River\ PAB2\ Proposal\ Experiments\ 11-09-2022
+cd ../rx_outputs/WHOI\ Experiments\ 12-01-2022
 ./../../build/rx_tx_samples_to_file \
-    --args "addr0=192.168.10.5" \
+    --args "addr0=192.168.10.2" \
     --tx-file "../../tx_outputs/baseband_fm0_625packets_0,5kbps_Npreamblebits=8_Ndatabits=16.dat" \
-    --rx-file "rx_single_chest_diff_004B_pab2_txfmr_-90,0deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat" \
+    --rx-file "fixed_array_chest_006A_006C_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat" \
     --nsamps 7000000 --tx-rate 200000 --rx-rate 200000 --settling 5 \
     --tx-channels "0" --rx-channels "0" --rx-subdev "A:AB"

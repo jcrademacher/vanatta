@@ -49,6 +49,9 @@ t = [0:(1/fs):(length(baseband)-1)/fs];
 encoded_baseband = amp*(1+m.*baseband);
 encoded_baseband_preamble = encoded_baseband(1:N_preamble_bits*fs/fb_preamble);
 
+% TONE GENERATION
+carr = 0.08*sin(2*pi*fc*t);
+
 tx = encoded_baseband.*cos(2*pi*fc*t);
 %tx = baseband_long.*cos(2*pi*fc*t_long);
 %plot(t,encoded_baseband);
@@ -87,3 +90,8 @@ write_complex_binary(tx,modulated_filename);
 write_complex_binary(all_data,data_filename);
 write_complex_binary(encoded_baseband_preamble,preamble_filename);
 write_complex_binary(encoded_baseband,baseband_filename);
+
+write_complex_binary(encoded_baseband+1j*carr,strcat("../../tx_outputs/combo_real_baseband_fm0_",num2str(N_packets),'packets_',...
+                            strrep(num2str(fb/1e3),'.',','),"kbps_Npreamblebits=",...
+                            num2str(N_preamble_bits),"_Ndatabits=",...
+                            num2str(N_data_bits),"_imag_tone_18,5kfc_160mVpp.dat"));

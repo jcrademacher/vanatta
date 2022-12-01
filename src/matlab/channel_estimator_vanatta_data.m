@@ -4,7 +4,7 @@ fb = 500;
 c = 1500;
 wc = 2*pi*fc;
 
-init_delay = 50e-3;%50e-3;
+init_delay = 50e-3;
 
 dd = 3;
 du = 2;
@@ -56,6 +56,7 @@ dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_
 
 % create full expected data signal
 expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
+expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*10);
 
 %expected_data = repmat(preamble,1,4*N_packets);
 
@@ -86,7 +87,7 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = round([-90:15:90]/0.9)*0.9;
+angles = [-90:5:90];%round([-90:15:90]/0.9)*0.9;
 Nang = length(angles);
 verbose = 1;
 do_plots = 0;
@@ -97,7 +98,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Proposal Experiments 11-09-2022/';
+root = '../../rx_outputs/WHOI Experiments 12-01-2022/';
 
 for n=1:Nang
     ang = angles(n);
@@ -120,7 +121,7 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'rx_single_chest_diff_004B_alone_pab2_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat';
+    filename = 'fixed_single_chest_006A_txfmr_nicktb_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
@@ -241,8 +242,8 @@ for n=1:Nang
     fm0_half_samp = ceil(fm0_samp/2);
 
     %%% full data sequence correlation to find global preamble start %%%
-    [rcorr,rlags] = xcorr(real(rx_baseband).',expected_data_signal.');
-    [icorr,ilags] = xcorr(imag(rx_baseband).',expected_data_signal.');
+    rcorr = xcorr(real(rx_baseband)',expected_data_signal');
+    icorr = xcorr(imag(rx_baseband)',expected_data_signal');
 
     corr_tot = rcorr(length(rx_baseband):end)+1j*icorr(length(rx_baseband):end);
     abs_corr = abs(corr_tot);
@@ -274,13 +275,13 @@ for n=1:Nang
         end_bit_dex = pnum*N_data_bits;
         
         % perform cross correlation for packet start
-        [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
-        [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
-        % removes tails of correlation 
-        corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
-        abs_corr = abs(corr_tot);
-        % find maximum correlation and begin decoding from there
-        [preamble_max,preamble_start] = max(abs_corr); 
+%         [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
+%         [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
+%         % removes tails of correlation 
+%         corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
+%         abs_corr = abs(corr_tot);
+%         % find maximum correlation and begin decoding from there
+%         [preamble_max,preamble_start] = max(abs_corr); 
         
         %%% comment out for correlation at every packet
         preamble_start = fm0_samp;
