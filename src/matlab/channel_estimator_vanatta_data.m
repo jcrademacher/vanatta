@@ -1,10 +1,11 @@
+tic
 fs = 2e5;
 fc = 18.5e3;
 fb = 500;
 c = 1500;
 wc = 2*pi*fc;
 
-init_delay = 50e-3;
+init_delay = 20e-3;%30e-3;
 
 dd = 3;
 du = 2;
@@ -29,11 +30,6 @@ expected_preamble = generate_fm0_sig2(preamble,fm0_samp);
 N_preamble_bits = length(preamble);
 N_data_bits = 16;
 
-preamble_len = fm0_samp*N_preamble_bits;
-data_len = fm0_samp*N_data_bits;                 % known data length in samples
-
-packet_len = data_len+preamble_len;     % packet length in samples
-
 % number of packets to decode
 N_packets = 625;
 packet_delay = 0; % delay in between each packet
@@ -56,7 +52,7 @@ dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_
 
 % create full expected data signal
 expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
-expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*10);
+expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*N_packets);
 
 %expected_data = repmat(preamble,1,4*N_packets);
 
@@ -87,7 +83,7 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-90:5:90];%round([-90:15:90]/0.9)*0.9;
+angles = -25; %[-90:5:90];
 Nang = length(angles);
 verbose = 1;
 do_plots = 0;
@@ -98,9 +94,12 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/WHOI Experiments 12-01-2022/';
+root = '../../rx_outputs/WHOI Experiments 12-02-2022/';
 
 for n=1:Nang
+    fs = 2e5;
+    fm0_samp = fs/fb;
+
     ang = angles(n);
     
     if verbose
@@ -121,19 +120,20 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'fixed_single_chest_006A_txfmr_nicktb_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat';
+    filename = 'fixed_vanatta4_stag_chest_006B_006C_006A_006F_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_7m_7m_1m_sep_hphydro_diff_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        
     sig = yr(24:end);
-    
+
     rx_len = length(sig);
     % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
     rx_signals = zeros(1,rx_len);
     rx_signals(1,:) = real(sig)-imag(sig);
     
+  
     %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
     % have had some issues with it in the past and since RX and TX USRPs are 
     % synchronized in most experiments directly using the known fc works fine
@@ -164,7 +164,14 @@ for n=1:Nang
     % rx_baseband = rx_baseband(gdlp+1:end);
     
     expected_preamble = filtfilt(lpFilt,expected_preamble')';
-    
+%     expected_data_signal = filtfilt(lpFilt,expected_data_signal')';
+%     
+    rx_baseband = downsample(rx_baseband,dfac);
+    expected_preamble = downsample(expected_preamble,dfac);
+    expected_data_signal = downsample(expected_data_signal,dfac);
+
+    fs = fs/dfac;
+    fm0_samp = fs/fb;
     % remove DC mean
     % rx_baseband = rx_baseband - mean(rx_baseband);
     rx_baseband = fftfilt(hpFilt,rx_baseband')';
@@ -238,6 +245,11 @@ for n=1:Nang
 
     % tx norm is length of preamble for binary keying (-1,+1)
     tx_norm = sum(abs(decode_preamble).^2);
+
+    preamble_len = fm0_samp*N_preamble_bits;
+    data_len = fm0_samp*N_data_bits;                 % known data length in samples
+    
+    packet_len = data_len+preamble_len;     % packet length in samples
 
     fm0_half_samp = ceil(fm0_samp/2);
 
@@ -361,6 +373,7 @@ for n=1:Nang
     end
 
     h_median_arr(n) = median(channel_estimates);
+    h_median_db = 20*log10(h_median_arr(n));
     h_median_snr_arr(n) = 10*log10(median(channel_snrs));
     noise_median_arr(n) = 10*log10(median(noise_power));
     
@@ -415,6 +428,7 @@ if length(angles) > 1
 end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
+toc
 %% EXPORT DATA %%
 % t = [0:1/fs:1-1/fs];
 % t0 = t - init_delay;

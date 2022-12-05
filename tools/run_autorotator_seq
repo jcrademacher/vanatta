@@ -1,5 +1,5 @@
-./../../autorotator/build/autorotator --exec "cd ../rx_outputs/WHOI\ Experiments\ 12-01-2022 && \
+./../../autorotator/build/autorotator --exec "cd ../rx_outputs/WHOI\ Experiments\ 12-02-2022 && \
 ./../../build/rx_tx_samples_to_file --args 'addr0=192.168.10.2' \
 --tx-file '../../tx_outputs/baseband_fm0_625packets_0,5kbps_Npreamblebits=8_Ndatabits=16.dat' \
---rx-file 'fixed_vanatta_chest_006A_006C_txfmr_nicktb_siggen_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat' \
+--rx-file 'fixed_vanatta4_stag_chest_006B_006C_006A_006F_txfmr_nicktb_siggen_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_7m_7m_1m_sep_hphydro_diff_0.dat' \
 --nsamps 7000000 --tx-rate 200000 --rx-rate 200000 --settling 5 --tx-channels '0' --rx-channels '0' --rx-subdev 'A:AB'" --start-angle -90 --end-angle 91 --step 5 
