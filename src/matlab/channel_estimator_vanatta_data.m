@@ -1,4 +1,3 @@
-tic
 fs = 2e5;
 fc = 18.5e3;
 fb = 500;
@@ -59,20 +58,21 @@ expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_
 % highpass filter cutoffs
 fsb1 = fb/100;
 fpb1 = fb/2;
-dfac = 1;   % donwsampling factor
+dec_fac = 2; % decimation factor before lowpass and downconversion
+dfac = 10;   % donwsampling factor
 
 % lowpass filter cutoffs
 fpb1_lp = 3*fb;
 fsb1_lp = 5*fb;
 
 % % highpass for after downsampling
-hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/dfac) ...
-                    ,'StopbandFrequency',fsb1*2/(fs/dfac),'StopbandAttenuation',80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
+hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/(dfac*dec_fac)) ...
+                    ,'StopbandFrequency',fsb1*2/(fs/(dfac*dec_fac)),'StopbandAttenuation',80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 % lowpass after downconversion, before downsampling
 lpFilt = designfilt('lowpassfir' ...
-                    ,'PassbandFrequency',fpb1_lp*2/fs...
-                    ,'StopbandFrequency',fsb1_lp*2/fs,'StopbandAttenuation' ...
+                    ,'PassbandFrequency',fpb1_lp*2/(fs/dec_fac)...
+                    ,'StopbandFrequency',fsb1_lp*2/(fs/dec_fac),'StopbandAttenuation' ...
                     ,80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 [gdlp,w] = grpdelay(lpFilt);
@@ -83,10 +83,10 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = -25; %[-90:5:90];
+angles = -90;%[-90:5:90];
 Nang = length(angles);
-verbose = 1;
-do_plots = 0;
+verbose = 0;
+do_plots = 1;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
@@ -94,9 +94,14 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/WHOI Experiments 12-02-2022/';
+root = '../../rx_outputs/WHOI Van Atta 2 Microbenchmarks 12-01-2022/';
+
+expected_preamble = filtfilt(lpFilt,expected_preamble')';
+expected_preamble = downsample(expected_preamble,dfac*dec_fac);
+expected_data_signal = downsample(expected_data_signal,dfac*dec_fac);
 
 for n=1:Nang
+    tic
     fs = 2e5;
     fm0_samp = fs/fb;
 
@@ -120,25 +125,28 @@ for n=1:Nang
         ang_str = strcat(ang_str,',0');
     end
     
-    filename = 'fixed_vanatta4_stag_chest_006B_006C_006A_006F_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_7m_7m_1m_sep_hphydro_diff_0.dat';
+    
+    filename = 'fixed_array_chest_006A_006C_txfmr_nicktb_siggen_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        
     sig = yr(24:end);
-
+    
+    sig = decimate(sig,dec_fac);
+    fs = fs/dec_fac;
+   
     rx_len = length(sig);
     % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
     rx_signals = zeros(1,rx_len);
     rx_signals(1,:) = real(sig)-imag(sig);
     
-  
     %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
     % have had some issues with it in the past and since RX and TX USRPs are 
     % synchronized in most experiments directly using the known fc works fine
     
-    Nfft = 500*fs;
+    Nfft = 100*fs;
     rx_fft = fft(rx_signals',Nfft)';
     fft_mag = abs(rx_fft);
     max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
@@ -149,36 +157,22 @@ for n=1:Nang
     %carrier_freq = fc;
     carrier_phase = 0;
     
-     % generate the time series and local oscillator
+    % generate the time series and local oscillator
+    
     t = 0:1/fs:(rx_len-1)/fs;
     lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
     % downconvert
     rx_baseband = rx_signals.*lo;
-    % slice out where data starts
-    %rx_baseband = rx_baseband(1500:end);
-   
+    
     % lowpass filtering both removes the 2fc term and anti-alias filters
     % filtfilt used for 0 group delay filtering
     rx_baseband = fftfilt(lpFilt,rx_baseband')';
-    %rx_baseband = fftfilt(lpFilt,rx_baseband')';
-    % rx_baseband = rx_baseband(gdlp+1:end);
-    
-    expected_preamble = filtfilt(lpFilt,expected_preamble')';
-%     expected_data_signal = filtfilt(lpFilt,expected_data_signal')';
-%     
     rx_baseband = downsample(rx_baseband,dfac);
-    expected_preamble = downsample(expected_preamble,dfac);
-    expected_data_signal = downsample(expected_data_signal,dfac);
 
     fs = fs/dfac;
     fm0_samp = fs/fb;
-    % remove DC mean
-    % rx_baseband = rx_baseband - mean(rx_baseband);
-    rx_baseband = fftfilt(hpFilt,rx_baseband')';
-    %rx_baseband = fftfilt(hpFilt,rx_baseband')';
-    % rx_baseband = rx_baseband(gdhp+1:end);
-    %expected_preamble1 = fftfilt(hpFilt,expected_preamble1);
     
+    rx_baseband = fftfilt(hpFilt,rx_baseband')';
     rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp-fm0_samp:end);
     
     sig_sec = rx_baseband;
@@ -231,6 +225,10 @@ for n=1:Nang
     % end
     
     % % estimates after channel projection for individual packets
+    preamble_len = fm0_samp*N_preamble_bits;
+    data_len = fm0_samp*N_data_bits;                 % known data length in samples
+    packet_len = data_len+preamble_len;     % packet length in samples
+   
     data_estimates = zeros(1,data_len*N_packets);
     decoded_data = zeros(1,N_packets*N_data_bits);
     packet_estimates = zeros(1,packet_len*N_packets);
@@ -246,11 +244,6 @@ for n=1:Nang
     % tx norm is length of preamble for binary keying (-1,+1)
     tx_norm = sum(abs(decode_preamble).^2);
 
-    preamble_len = fm0_samp*N_preamble_bits;
-    data_len = fm0_samp*N_data_bits;                 % known data length in samples
-    
-    packet_len = data_len+preamble_len;     % packet length in samples
-
     fm0_half_samp = ceil(fm0_samp/2);
 
     %%% full data sequence correlation to find global preamble start %%%
@@ -260,11 +253,15 @@ for n=1:Nang
     corr_tot = rcorr(length(rx_baseband):end)+1j*icorr(length(rx_baseband):end);
     abs_corr = abs(corr_tot);
     [preamble_max,global_preamble_start] = max(abs_corr);
+    abs_corr = abs_corr/preamble_max;
     %%%% end full data sequence correlation %%%%
     
     if do_plots
         figure(3);
-        plot(abs_corr);
+        plot(abs_corr/100);
+        hold on;
+        plot(real(rx_baseband));
+        plot([zeros(1,global_preamble_start) expected_data_signal/1000]);
     end
         
     % cutoff rx_baseband where it begins
@@ -389,6 +386,7 @@ for n=1:Nang
 %     N_training = 1;
 %     [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,10);
    
+    toc
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
@@ -428,7 +426,7 @@ if length(angles) > 1
 end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
-toc
+
 %% EXPORT DATA %%
 % t = [0:1/fs:1-1/fs];
 % t0 = t - init_delay;
