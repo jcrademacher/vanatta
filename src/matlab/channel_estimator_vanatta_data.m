@@ -51,7 +51,7 @@ dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_
 
 % create full expected data signal
 expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
-expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*20);
+expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*N_packets);
 
 %expected_data = repmat(preamble,1,4*N_packets);
 
@@ -59,11 +59,11 @@ expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_
 fsb1 = fb/100;
 fpb1 = fb/2;
 dec_fac = 2; % decimation factor before lowpass and downconversion
-dfac = 10;   % donwsampling factor
+dfac = 5;   % donwsampling factor
 
 % lowpass filter cutoffs
-fpb1_lp = 3*fb;
-fsb1_lp = 5*fb;
+fpb1_lp = 5*fb;
+fsb1_lp = 7*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/(dfac*dec_fac)) ...
@@ -83,10 +83,10 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = [-90:5:90];
+angles = -70; %[-90:5:90];
 Nang = length(angles);
-verbose = 1;
-do_plots = 0;
+verbose = 0;
+do_plots = 1;
 
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
@@ -94,7 +94,7 @@ noise_median_arr = zeros(Nang,1);
 
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/WHOI Van Atta 2 Microbenchmarks 12-01-2022/';
+root = '../../rx_outputs/River PAB2 Van Atta 12-08-2022/';
 
 expected_preamble = filtfilt(lpFilt,expected_preamble')';
 expected_preamble = downsample(expected_preamble,dfac*dec_fac);
@@ -126,7 +126,7 @@ for n=1:Nang
     end
     
     
-    filename = 'fixed_single_chest_006A_txfmr_nicktb_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat';
+    filename = 'fixed_vanatta_006F_006B_chest_txfmr_nicktb_siggen_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_6m_5m_hphydro_diff_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
@@ -146,7 +146,7 @@ for n=1:Nang
     % have had some issues with it in the past and since RX and TX USRPs are 
     % synchronized in most experiments directly using the known fc works fine
     
-    Nfft = 1e3*fs;
+    Nfft = 100*fs;
     rx_fft = fft(rx_signals',Nfft)';
     fft_mag = abs(rx_fft);
     max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
