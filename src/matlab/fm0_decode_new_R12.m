@@ -230,7 +230,7 @@ function [snr_basis, bits, sig_power , noise_power, chan_vec, n_vec] = fm0_decod
      nnn2 = mean(n3); % noise using basis 
 %      snrr=mean(hhh/nnn);
      snr_mean = 10*log10(hhh/nnn);% + 10*log10(fm0_samps);
-     snr_basis = 10*log10(abs((hhh-nnn2)/(2*nnn2))); %10*log10(hhh/nnn2);
+     snr_basis = abs((hhh-nnn2)/(2*nnn2)); %10*log10(hhh/nnn2);
      sig_power = abs(hhh-nnn2);
      noise_power = 2*nnn2;
 %      

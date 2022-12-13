@@ -1,4 +1,4 @@
-function [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(y_rx,complete_bits,num_pkt_ind,num_testing_pkts,const_lvl,W,AAT,data_rate,Fs,ds_ind)
+function [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = DFE_500_vanatta(y_rx,complete_bits,num_pkt_ind,num_testing_pkts,const_lvl,W,AAT,data_rate,Fs,ds_ind)
 % y_rx = raw data with first sample being first sample of first bit (column
 % vector)
 % complete_bits = all bits in raw form (0,1) sequence, each row is packet
@@ -124,7 +124,15 @@ for ff = f_factor
          tot_bits_b = [];
          act_bits_a = [];
          act_bits_b = [];
-         snr_vec =[];
+         snr_pre_vec =[];
+         snr_post_vec = [];
+
+         h_mag_pre_vec = [];
+         h_mag_post_vec = [];
+
+         noise_pre_vec = [];
+         noise_post_vec = [];
+
          cnt = 1;
          for kk = 1:num_testing_pkts
               %% Before Equalization
@@ -138,7 +146,9 @@ for ff = f_factor
              bits_b = bit_vec_tx((kk-1)*pkt_bits+1:(kk-1)*pkt_bits+pkt_bits);
              act_bits_b = [act_bits_b bits_b(pre_bits+1:end-1)];
              ber_b(cnt) = sum(abs(bits_b(pre_bits+1:end-1) - dec_bits))/length(dec_bits);
-             snr_vec = [snr_vec snr_basis];
+             snr_pre_vec = [snr_pre_vec snr_basis];
+             h_mag_pre_vec = [h_mag_pre_vec sig_power];
+             noise_pre_vec = [noise_pre_vec noise_power];
              %disp(['Packet BER (Before): ' num2str(ber_b(cnt))]);
              %disp(['Packet SNR in dB   : ' num2str(snr_basis)]);
 
@@ -151,6 +161,9 @@ for ff = f_factor
              bits_a = bit_vec_tx((kk-1)*pkt_bits+1:(kk-1)*pkt_bits+pkt_bits);
              act_bits_a = [act_bits_a bits_a(pre_bits+1:end-1)];
              ber_a(cnt) = sum(abs(bits_a(pre_bits+1:end-1) - dec_bits))/length(dec_bits);
+             snr_post_vec = [snr_post_vec snr_basis];
+             h_mag_post_vec = [h_mag_post_vec sig_power];
+             noise_post_vec = [noise_post_vec noise_power];
              %disp(['Packet BER (After): ' num2str(ber_a(cnt))]);
              cnt =cnt + 1;
          end
@@ -159,8 +172,13 @@ for ff = f_factor
         disp(['<strong>Final BER (Before):</strong> ' num2str(ber_fin_b)]);
         ber_fin_a = sum(abs(tot_bits_a - act_bits_a))/length(tot_bits_a);
         disp(['<strong>Final BER (After):</strong> ' num2str(ber_fin_a)]);
-        disp(['<strong>Final SNR        :</strong> ' num2str(mean(snr_vec))]);
-        snr_final = mean(snr_vec);
+        disp(['<strong>Final SNR (dB)   :</strong> ' num2str(10*log10(median(snr_pre_vec)))]);
+        snr_pre_final = median(snr_pre_vec);
+        snr_post_final = median(snr_post_vec);
+        h_mag_pre_final = median(h_mag_pre_vec);
+        h_mag_post_final = median(h_mag_post_vec);
+        noise_pre_final = median(noise_pre_vec);
+        noise_post_final = median(noise_post_vec);
         ber_vec_a(row,cnttt) = ber_fin_a;
         ber_vec_b(row,cnttt) = ber_fin_b;
         cnttt = cnttt + 1;

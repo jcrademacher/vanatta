@@ -51,7 +51,7 @@ dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_
 
 % create full expected data signal
 expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
-expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*N_packets);
+expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*300);
 
 %expected_data = repmat(preamble,1,4*N_packets);
 
@@ -83,18 +83,31 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = -70; %[-90:5:90];
+angles = [-90 -85 -75:5:15 25:5:90];
 Nang = length(angles);
-verbose = 0;
-do_plots = 1;
+verbose = 1;
+do_plots = 0;
 
+% JACK'S H, SNR, NOISE
 h_median_arr = zeros(Nang,1);
 h_median_snr_arr = zeros(Nang,1);
 noise_median_arr = zeros(Nang,1);
 
+
+% DFE H, SNR, NOISE (PRE/POST)
+snr_median_pre_dfe_arr = zeros(Nang,1);
+snr_median_post_dfe_arr = zeros(Nang,1);
+
+h_median_pre_dfe_arr = zeros(Nang,1);
+h_median_post_dfe_arr = zeros(Nang,1);
+
+noise_median_pre_dfe_arr = zeros(Nang,1);
+noise_median_post_dfe_arr = zeros(Nang,1);
+
+
 BER = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Van Atta 12-08-2022/';
+root = '../../rx_outputs/WHOI Van Atta 2 Microbenchmarks 12-01-2022/';
 
 expected_preamble = filtfilt(lpFilt,expected_preamble')';
 expected_preamble = downsample(expected_preamble,dfac*dec_fac);
@@ -126,7 +139,7 @@ for n=1:Nang
     end
     
     
-    filename = 'fixed_vanatta_006F_006B_chest_txfmr_nicktb_siggen_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_6m_5m_hphydro_diff_0.dat';
+    filename = 'fixed_array_chest_006A_006C_txfmr_nicktb_siggen_18,5kfc_?deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
@@ -146,7 +159,7 @@ for n=1:Nang
     % have had some issues with it in the past and since RX and TX USRPs are 
     % synchronized in most experiments directly using the known fc works fine
     
-    Nfft = 100*fs;
+    Nfft = 200*fs;
     rx_fft = fft(rx_signals',Nfft)';
     fft_mag = abs(rx_fft);
     max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
@@ -202,10 +215,15 @@ for n=1:Nang
         figure(2);
         subplot(2,1,1);
         hold on;
+        title("Real Part RX Baseband")
         plot(real(sig_sec));
+        ylabel("Amplitude (V)");
         subplot(2,1,2);
         hold on;
         plot(imag(sig_sec));
+        ylabel("Amplitude (V)");
+        xlabel("Samples");
+        title("Imag Part RX Baseband");
     end
     
     
@@ -250,7 +268,7 @@ for n=1:Nang
     rcorr = xcorr(real(rx_baseband)',expected_data_signal');
     icorr = xcorr(imag(rx_baseband)',expected_data_signal');
 
-    corr_tot = rcorr(length(rx_baseband):end)+1j*icorr(length(rx_baseband):end);
+    corr_tot = rcorr(length(rx_baseband):end-round(3*length(rx_baseband)/4))+1j*icorr(length(rx_baseband):end-round(3*length(rx_baseband)/4));
     abs_corr = abs(corr_tot);
     [preamble_max,global_preamble_start] = max(abs_corr);
     abs_corr = abs_corr/preamble_max;
@@ -367,6 +385,7 @@ for n=1:Nang
         %axis equal;
         grid on;
         grid minor;
+        title("Channel Estimates Constellation");
     end
 
     h_median_arr(n) = median(channel_estimates);
@@ -380,49 +399,96 @@ for n=1:Nang
 
     rx_baseband = rx_baseband(fm0_samp+1:N_tot_bits*fm0_samp+fm0_samp);
     %%
-%     N_training = 120;
-%     [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,10);
-%     
-%     N_training = 1;
-%     [weights,ber_fin_b,ber_fin_a,snr_final] = DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,10);
-   
+    N_training = 200;
+    [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ... 
+        DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,1);
+    
+    N_training = 1;
+    [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ...
+        DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,1);
+    
+    snr_median_pre_dfe_arr(n) = 10*log10(snr_pre_final);
+    snr_median_post_dfe_arr(n) = 10*log10(snr_post_final);
+    
+    h_median_pre_dfe_arr(n) = 10*log10(h_mag_pre_final);
+    h_median_post_dfe_arr(n) = 10*log10(h_mag_post_final);
+
+    noise_median_pre_dfe_arr(n) = 10*log10(noise_pre_final);
+    noise_median_post_dfe_arr(n) = 10*log10(noise_post_final);
+
     toc
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
+%     figure(6);
+%     hold on;
+%     plot(angles,20*log10(abs(h_median_arr)));
+%     grid on;
+%     grid minor;
+%     xlabel("Angle (deg)");
+%     ylabel("Channel Mag (dB20)");
+%     
+%     figure(7);
+%     hold on;
+%     plot(angles,h_median_snr_arr);
+% %     plot(angles,20*log10(abs(h_median_arr))-noise_median_arr);
+%     grid on;
+%     grid minor;
+%     xlabel("Angle (deg)");
+%     ylabel("Channel SNR (dB20)");
+% 
+%     figure(8);
+%     semilogy(h_median_snr_arr,BER,'o','LineWidth',2);
+%     hold on;
+%     grid on;
+%     grid minor;
+%     xlabel("Median Bit SNR (dB)");
+%     ylabel("Total BER");
+% 
+%     figure(9);
+%     hold on;
+%     plot(angles,noise_median_arr);
+%     grid on;
+%     grid minor;
+%     title("Median Noise Power (dB) vs. Angle (deg)");
+%     xlabel("Angle (deg)");
+%     ylabel("Median Noise Power (dB)");
+
     figure(6);
     hold on;
-    plot(angles,20*log10(abs(h_median_arr)));
+    plot(angles,h_median_pre_dfe_arr);
     grid on;
     grid minor;
+    title("Median Channel Magnitude PRE DFE");
     xlabel("Angle (deg)");
-    ylabel("Channel Mag (dB20)");
+    ylabel("Magnitude (dB)");
     
     figure(7);
     hold on;
-    plot(angles,h_median_snr_arr);
+    plot(angles,snr_median_pre_dfe_arr);
 %     plot(angles,20*log10(abs(h_median_arr))-noise_median_arr);
     grid on;
     grid minor;
     xlabel("Angle (deg)");
-    ylabel("Channel SNR (dB20)");
-
-    figure(8);
-    semilogy(h_median_snr_arr,BER,'o','LineWidth',2);
-    hold on;
-    grid on;
-    grid minor;
-    xlabel("Median Bit SNR (dB)");
-    ylabel("Total BER");
+    ylabel("Magnitude (dB)");
+    title("Median SNR PRE DFE");
+% 
+%     figure(8);
+%     semilogy(h_median_snr_arr,BER,'o','LineWidth',2);
+%     hold on;
+%     grid on;
+%     grid minor;
+%     xlabel("Median Bit SNR (dB)");
+%     ylabel("Total BER");
 
     figure(9);
     hold on;
-    plot(angles,noise_median_arr);
+    plot(angles,noise_median_pre_dfe_arr);
     grid on;
     grid minor;
-    title("Median Noise Power (dB) vs. Angle (deg)");
+    title("Median Noise Power PRE DFE");
     xlabel("Angle (deg)");
-    ylabel("Median Noise Power (dB)");
+    ylabel("Magnitude (dB)");
 end
 % (abs(comb_ch_est(2:end))-abs(n1_ch_est+n2_ch_est(2:end)))./abs(comb_ch_est(2:end))
 
