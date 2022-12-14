@@ -1,8 +1,17 @@
 fs = 2e5;
-t_tot = 10e-3;
-N = fs*t_tot;
 
-f0 = 3e3;
+root = '../../rx_outputs/WHOI Van Atta 2 Microbenchmarks 12-01-2022/';
+filename = 'fixed_array_chest_006A_006C_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_3m_depth_005B_purui_tx_60Vrms_1,9m_1m_hphydro_diff_0.dat';
+filepath = strcat(root,filename);
+
+yr = read_complex_binary(filepath);        
+sig = yr(24:end);
+sig = real(sig)-imag(sig);
+
+N = length(sig);
+t_tot = N/fs;
+
+fc = 18.5e3;
 
 ph_err = [];
 
@@ -27,7 +36,7 @@ integ_out = 0;
 for n = 1:N-1
     t(n) = t_tot*n/N;
     % input signal
-    y(n) = sin(2*pi*f0*t(n)+pi);
+    y(n) = sig(n);%sin(2*pi*fc*t(n)+pi);
 
     % phase detect
     ph(n) = kd*y(n)*imag(vco(n));
@@ -38,7 +47,7 @@ for n = 1:N-1
 
     % vco
     ph_est(n+1) = ph_est(n) + k0*lp(n);
-    vco(n+1) = exp(-1j*(2*pi*f0*t_tot*(n+1)/N+ph_est(n)));
+    vco(n+1) = exp(-1j*(2*pi*fc*t_tot*(n+1)/N+ph_est(n)));
 end
 
 
