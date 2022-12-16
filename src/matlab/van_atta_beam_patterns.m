@@ -6,13 +6,15 @@ N = 2;
 A = 1;
 r = 1;
 phi = pi/6;
-do_direction_val = 0;
+do_direction_val = 1;
 
 imp1 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
 imp1 = imp1(1:801,:);
 
+
 imp2 = readmatrix("../../impedance/PAB010B_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_010B_008A.CSV");
 imp2 = imp2(1:801,:);
+imp2 = 40+1j*10;
 
 dmin = 1e-2;
 dmax = 30e-2;
@@ -20,11 +22,15 @@ dmax = 30e-2;
 phimin = -pi/2;
 phimax = pi/2;
 
-fmin = 10e3;
-fmax = 30e3;
+fmin = 18.5e3;
+fmax = 18.5e3;
+
+imp1 = [fmin 40 10];
+imp2 = [fmin 40 10];
 % ls = 1.87e-3;
-% rlc1 = rlc_modeler(imp1,[fmin fmax],[],ls,1);
-% rlc2 = rlc_modeler(imp2,[fmin fmax],[],ls,1);
+ls = 0;
+rlc1 = rlc_modeler(imp1,[fmin fmax],[],ls,1);
+rlc2 = rlc_modeler(imp2,[fmin fmax],[],ls,1);
 
 % atot_db = generate_pattern(params);
 
@@ -40,32 +46,32 @@ an = zeros(N,Ntheta);    % total wave at observed point theta (far field)
 
 w = 2*pi*f;
 
-% r1 = rlc1(1);
-% l1 = rlc1(2)*1e-3;
-% c1 = rlc1(3)*1e-9;
-% c01 = rlc1(4)*1e-9;
-% ls1 = ls;
-% 
-% r2 = rlc2(1);
-% l2 = rlc2(2)*1e-3;
-% c2 = rlc2(3)*1e-9;
-% c02 = rlc2(4)*1e-9;
-% ls2 = ls;
-% 
-% A1 = 1+1j*w*c01.*(1./(1j*w*c1)+1j*w*l1);
-% B1 = 1./(1j*w*c1)+1j*w*l1+1j*w*ls1+1j*w*c01.*((1./(1j*w*c1)+1j*w*l1).*1j*w*ls1);
-% C1 = 1j*w*c01;
-% D1 = 1+1j*w*ls1.*(1j*w*c01);
-% 
-% A2 = 1+1j*w*ls2.*(1j*w*c02);
-% B2 = 1./(1j*w*c2)+1j*w*l2+1j*w*ls2+1j*w*c02.*((1./(1j*w*c2)+1j*w*l2).*1j*w*ls2);
-% C2 = 1j*w*c02;
-% D2 = 1+1j*w*c02.*(1./(1j*w*c2)+1j*w*l2);
-% 
-% T1 = [A1 B1;C1 D1];
-% T2 = [A2 B2;C2 D2];
+r1 = rlc1(1);
+l1 = rlc1(2)*1e-3;
+c1 = rlc1(3)*1e-9;
+c01 = rlc1(4)*1e-9;
+ls1 = ls;
 
-%sij = get_sparams(T1,T2,T1,T2,[r1 r2 r1 r2]);
+r2 = rlc2(1);
+l2 = rlc2(2)*1e-3;
+c2 = rlc2(3)*1e-9;
+c02 = rlc2(4)*1e-9;
+ls2 = ls;
+
+A1 = 1+1j*w*c01.*(1./(1j*w*c1)+1j*w*l1);
+B1 = 1./(1j*w*c1)+1j*w*l1+1j*w*ls1+1j*w*c01.*((1./(1j*w*c1)+1j*w*l1).*1j*w*ls1);
+C1 = 1j*w*c01;
+D1 = 1+1j*w*ls1.*(1j*w*c01);
+
+A2 = 1+1j*w*ls2.*(1j*w*c02);
+B2 = 1./(1j*w*c2)+1j*w*l2+1j*w*ls2+1j*w*c02.*((1./(1j*w*c2)+1j*w*l2).*1j*w*ls2);
+C2 = 1j*w*c02;
+D2 = 1+1j*w*c02.*(1./(1j*w*c2)+1j*w*l2);
+
+T1 = [A1 B1;C1 D1];
+T2 = [A2 B2;C2 D2];
+
+sij = get_sparams(T1,T2,[r1 r2]);
 % MANUALLY ENTERED S PARAMS FROM ADS FOR 002A<->004D inner and
 % 001A<->004B outer POS STATE
 %     sij = [ 0.798+1j*0.164 0 0 -0.12+1j*0.567;
@@ -77,7 +83,7 @@ w = 2*pi*f;
 %             0 0.748+1j*0.163 0.155-1j*0.624 0;
 %             0 0.155-1j*0.624 0.738+1j*0.205 0;
 %             0.12-1j*0.567 0 0 0.796+1j*0.175];
-sij = [sqrt(2)/2 sqrt(2)/2; sqrt(2)/2 sqrt(2)/2];
+%sij = [sqrt(2)/2 sqrt(2)/2; sqrt(2)/2 sqrt(2)/2];
 
 lambda = c / f;
 k = 2*pi/lambda;
@@ -122,11 +128,11 @@ polarplot(theta,ar_db,'--','LineWidth',6);
 % pol_steer = polarplot(-phi*ones(1,10),linspace(min_r_db,max_r_db,10),'--','Color','red');
 rlim([min_r_db max_r_db]);
 ax = gca;
-ax.FontSize = 36;
-rule = ax.RAxis;
-rlabel = rule.Label;
-rlabel.FontSize = 36;
-rlabel.Rotation = 90;
+% ax.FontSize = 36;
+% rule = ax.RAxis;
+% rlabel = rule.Label;
+% rlabel.FontSize = 36;
+% rlabel.Rotation = 90;
 rlabel.String = "Magnitude (dB) \rightarrow";
 legend("Transmission Response","Reflection Response");
 

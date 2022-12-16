@@ -5,8 +5,8 @@ function rlc_c0 = rlc_modeler(measured_data,fminmax,init_rlc_c0,ls,display)
     
     f = measured_data(:,1);
     
-    ifmin = find(f > fmin,1);
-    ifmax = find(f < fmax,1,'last');
+    ifmin = find(f >= fmin,1);
+    ifmax = find(f <= fmax,1,'last');
     
     f = f(ifmin:ifmax);
     r = measured_data(ifmin:ifmax,2);
