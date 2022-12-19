@@ -42,7 +42,7 @@ fm0samp = Fs/data_rate;
 ref_tap = 1;
 ff_tap = fm0samp/2+3;%53;%23; 
 
-fb_tap = fm0samp/4+3;%200;%100;
+fb_tap = fm0samp/4+1;%200;%100;
 pkt_bits = 24; %50 for waleed 24 for jack
 pre_bits = 8; % 10 for waleed 8 for jack
 pkt_size = pkt_bits*fm0samp;
@@ -112,7 +112,7 @@ for ff = f_factor
         %rx_data_dec = rx_data(te_ind);
         rx_data_dec = y_rx(te_ind);
         for y_bit = 1:length(eq_y(te_indx))
-           if (bits_dat(y_bit)) < 0
+           if (real(bits_dat(y_bit))) < 0
              tot_bits_vec = [tot_bits_vec -0.5.*ones(1,fm0samp/2)]; 
           else
              tot_bits_vec = [tot_bits_vec 0.5.*ones(1,fm0samp/2)];

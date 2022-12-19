@@ -51,13 +51,13 @@ dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_
 
 % create full expected data signal
 expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
-expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*200);
+expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*N_packets);
 
 %expected_data = repmat(preamble,1,4*N_packets);
 
 % highpass filter cutoffs
-fsb1 = fb/100;
-fpb1 = fb/2;
+fsb1 = fb/10;
+fpb1 = fb;
 dec_fac = 2; % decimation factor before lowpass and downconversion
 dfac = 5;   % donwsampling factor
 
@@ -67,7 +67,7 @@ fsb1_lp = 7*fb;
 
 % % highpass for after downsampling
 hpFilt = designfilt('highpassfir','PassbandFrequency',fpb1*2/(fs/(dfac*dec_fac)) ...
-                    ,'StopbandFrequency',fsb1*2/(fs/(dfac*dec_fac)),'StopbandAttenuation',80,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
+                    ,'StopbandFrequency',fsb1*2/(fs/(dfac*dec_fac)),'StopbandAttenuation',200,'PassbandRipple',0.1,'DesignMethod','kaiserwin');
 
 % lowpass after downconversion, before downsampling
 lpFilt = designfilt('lowpassfir' ...
@@ -83,7 +83,7 @@ gdhp = mean(gdhp);
 
 
 %%%% END DESIGN PARAMETERS %%%%
-angles = 0;%[-90:5:90];
+angles = 0;%[-90:5:35 45:5:90];
 Nang = length(angles);
 verbose = 0;
 do_plots = 1;
@@ -139,7 +139,7 @@ for n=1:Nang
     end
     
     
-    filename = 'fixed_vanatta4x2_stag_006B_006F_006A_006C_x_001A_004A_004B_004D_chest_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_14m_13m_hphydro_diff_1.dat';
+    filename = 'fixed_vanatta4x2_stag_006B_006F_006A_006C_x_001A_004A_004B_004D_chest_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_14m_13m_hphydro_diff_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
@@ -171,54 +171,54 @@ for n=1:Nang
     %carrier_phase = 0;
     
     %%%% SOFTWARE PLL %%%%
-%     t_tot = rx_len/fs;
-%     
-%     t = zeros(1,rx_len);
-%     lo = zeros(1,rx_len);
-%     ph = zeros(1,rx_len);
-%     ph_est = zeros(1,rx_len);
-%     lp = zeros(1,rx_len);
-%     y = zeros(1,rx_len);
-%     integ = zeros(1,rx_len);
-%     
-%     Bn = 1e-3*fs;
-%     damp = 1;
-%     
-%     k0 = 1;
-%     kd = 0.5;
-%     kp = 1/(kd*k0)*4*damp/(damp+1/(4*damp))*Bn/fs;
-%     ki = 1/(kd*k0)*4/(damp+1/(4*damp))^2*(Bn/fs)^2;
-%     
-%     integ_out = 0;
-%     ph_est(1) = carrier_phase;
-%     
-%     for i = 1:rx_len-1
-%         t(i) = t_tot*i/rx_len;
-%         % input signal
-%         y(i) = rx_signals(1,i);%sin(2*pi*fc*t(n)+pi);
-%     
-%         % phase detect
-%         ph(i) = kd*y(i)*imag(lo(i));
-%     
-%         % loop filter
-%         integ_out = ki*ph(i)+integ_out;
-%         lp(i) = kp*ph(i) + integ_out;
-%     
-%         % vco
-%         ph_est(i+1) = ph_est(i) + k0*lp(i);
-%         lo(i+1) = exp(-1j*(2*pi*carrier_freq*t_tot*(i+1)/rx_len+ph_est(i)));
-%     end
-% 
-%     t(end) = t_tot;
-%     
-%     figure(10);
-%     plot(t,rx_signals(1,:));
-%     hold on;
-%     plot(t,real(lo));
+    t_tot = rx_len/fs;
+    
+    t = zeros(1,rx_len);
+    lo = zeros(1,rx_len);
+    ph = zeros(1,rx_len);
+    ph_est = zeros(1,rx_len);
+    lp = zeros(1,rx_len);
+    y = zeros(1,rx_len);
+    integ = zeros(1,rx_len);
+    
+    Bn = 1e-2*fs;
+    damp = 1/sqrt(2);
+    
+    k0 = 1;
+    kd = 0.5;
+    kp = 1/(kd*k0)*4*damp/(damp+1/(4*damp))*Bn/fs;
+    ki = 1/(kd*k0)*4/(damp+1/(4*damp))^2*(Bn/fs)^2;
+    
+    integ_out = 0;
+    ph_est(1) = carrier_phase;
+    
+    for i = 1:rx_len-1
+        t(i) = t_tot*i/rx_len;
+        % input signal
+        y(i) = rx_signals(1,i);%sin(2*pi*fc*t(n)+pi);
+    
+        % phase detect
+        ph(i) = kd*y(i)*imag(lo(i));
+    
+        % loop filter
+        integ_out = ki*ph(i)+integ_out;
+        lp(i) = kp*ph(i) + integ_out;
+    
+        % vco
+        ph_est(i+1) = ph_est(i) + k0*lp(i);
+        lo(i+1) = exp(-1j*(2*pi*carrier_freq*t_tot*(i+1)/rx_len+ph_est(i)));
+    end
+
+    t(end) = t_tot;
+    
+    figure(10);
+    plot(t,rx_signals(1,:));
+    hold on;
+    plot(t,real(lo));
 
     % generate the time series and local oscillator
-    t = [0:1/fs:(rx_len-1)/fs];
-    lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
+%     t = [0:1/fs:(rx_len-1)/fs];
+%     lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
     % downconvert
     rx_baseband = rx_signals.*lo;
     
@@ -447,7 +447,7 @@ for n=1:Nang
 
     rx_baseband = rx_baseband(fm0_samp+1:N_tot_bits*fm0_samp+fm0_samp);
     %%
-    N_training = 200;
+    N_training = 400;
     [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ... 
         DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,1);
     
