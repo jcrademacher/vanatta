@@ -6,3 +6,4 @@ impedance/*
 .vscode
 *.mat
 build
+*.fig
