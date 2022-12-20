@@ -5,6 +5,7 @@ c = 1500;
 wc = 2*pi*fc;
 
 init_delay = 20e-3;%30e-3;
+sample_offset = 24;
 
 dd = 3;
 du = 2;
@@ -81,12 +82,17 @@ gdlp = mean(gdlp);
 [gdhp,w] = grpdelay(hpFilt);
 gdhp = mean(gdhp);
 
-
-%%%% END DESIGN PARAMETERS %%%%
 angles = 0;%[-90:5:35 45:5:90];
 Nang = length(angles);
-verbose = 0;
-do_plots = 1;
+
+%%%% END DESIGN PARAMETERS %%%%
+
+%%%% PROGRAM OPTIONS %%%%
+VERBOSE = 0;
+DO_PLOTS = 1;
+USE_PLL = 0;
+TX_LO = 0;
+%%%% END PROGRAM OPTIONS
 
 % JACK'S H, SNR, NOISE
 h_median_arr = zeros(Nang,1);
@@ -120,7 +126,7 @@ for n=1:Nang
 
     ang = angles(n);
     
-    if verbose
+    if VERBOSE
         disp("angle=");
         disp(ang);
     end
@@ -145,7 +151,7 @@ for n=1:Nang
     filepath = strcat(root,strrep(filename,'?',ang_str));
 
     yr = read_complex_binary(filepath);        
-    sig = yr(24:end);
+    sig = yr(sample_offset:end);
     
     sig = decimate(sig,dec_fac);
     fs = fs/dec_fac;
@@ -170,55 +176,67 @@ for n=1:Nang
     %carrier_freq = fc;
     %carrier_phase = 0;
     
+    % generate the time series and local oscillator
+    t = [0:1/fs:(rx_len-1)/fs];
+    lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
+    
+    if TX_LO
+        lo = read_complex_binary(filename);
+        lo = lo(sample_offset:end);
+
+        corr = xcorr(rx_signals',lo');
+        corr = corr(length(rx_signals):end);
+        [max,lo_start] = max(corr);
+
+        rx_signals = rx_signals(lo_start:end);
+        
     %%%% SOFTWARE PLL %%%%
-    t_tot = rx_len/fs;
+    % this block replaces t and lo if USE_PLL = 1
+    elseif USE_PLL
+        t_tot = rx_len/fs;
+        
+        ph = zeros(1,rx_len);
+        ph_est = zeros(1,rx_len);
+        lp = zeros(1,rx_len);
+        y = zeros(1,rx_len);
+        integ = zeros(1,rx_len);
+        
+        Bn = 1e-2*fs;
+        damp = 1/sqrt(2);
+        
+        k0 = 1;
+        kd = 0.5;
+        kp = 1/(kd*k0)*4*damp/(damp+1/(4*damp))*Bn/fs;
+        ki = 1/(kd*k0)*4/(damp+1/(4*damp))^2*(Bn/fs)^2;
+        
+        integ_out = 0;
+        ph_est(1) = carrier_phase;
+        
+        for i = 1:rx_len-1
+            t(i) = t_tot*i/rx_len;
+            % input signal
+            y(i) = rx_signals(1,i);%sin(2*pi*fc*t(n)+pi);
+        
+            % phase detect
+            ph(i) = kd*y(i)*imag(lo(i));
+        
+            % loop filter
+            integ_out = ki*ph(i)+integ_out;
+            lp(i) = kp*ph(i) + integ_out;
+        
+            % vco
+            ph_est(i+1) = ph_est(i) + k0*lp(i);
+            lo(i+1) = exp(-1j*(2*pi*carrier_freq*t_tot*(i+1)/rx_len+ph_est(i)));
+        end
     
-    t = zeros(1,rx_len);
-    lo = zeros(1,rx_len);
-    ph = zeros(1,rx_len);
-    ph_est = zeros(1,rx_len);
-    lp = zeros(1,rx_len);
-    y = zeros(1,rx_len);
-    integ = zeros(1,rx_len);
-    
-    Bn = 1e-2*fs;
-    damp = 1/sqrt(2);
-    
-    k0 = 1;
-    kd = 0.5;
-    kp = 1/(kd*k0)*4*damp/(damp+1/(4*damp))*Bn/fs;
-    ki = 1/(kd*k0)*4/(damp+1/(4*damp))^2*(Bn/fs)^2;
-    
-    integ_out = 0;
-    ph_est(1) = carrier_phase;
-    
-    for i = 1:rx_len-1
-        t(i) = t_tot*i/rx_len;
-        % input signal
-        y(i) = rx_signals(1,i);%sin(2*pi*fc*t(n)+pi);
-    
-        % phase detect
-        ph(i) = kd*y(i)*imag(lo(i));
-    
-        % loop filter
-        integ_out = ki*ph(i)+integ_out;
-        lp(i) = kp*ph(i) + integ_out;
-    
-        % vco
-        ph_est(i+1) = ph_est(i) + k0*lp(i);
-        lo(i+1) = exp(-1j*(2*pi*carrier_freq*t_tot*(i+1)/rx_len+ph_est(i)));
+        t(end) = t_tot;
+        
+        figure(10);
+        plot(t,rx_signals(1,:));
+        hold on;
+        plot(t,real(lo));
     end
 
-    t(end) = t_tot;
-    
-    figure(10);
-    plot(t,rx_signals(1,:));
-    hold on;
-    plot(t,real(lo));
-
-    % generate the time series and local oscillator
-%     t = [0:1/fs:(rx_len-1)/fs];
-%     lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
     % downconvert
     rx_baseband = rx_signals.*lo;
     
@@ -245,7 +263,7 @@ for n=1:Nang
     window = chebwin(t_window*fs);
     Nfft = 2^nextpow2(length(window));
     
-    if do_plots
+    if DO_PLOTS
         figure(1);
         hold on;
         [pxx,f] = pwelch(sig_sec,window,[],Nfft,fs);
@@ -321,7 +339,7 @@ for n=1:Nang
     
     %global_preamble_start = global_preamble_start - fm0_samp/2;
 
-    if do_plots
+    if DO_PLOTS
         figure(3);
         plot(abs_corr/100);
         hold on;
@@ -333,7 +351,7 @@ for n=1:Nang
     % cutoff rx_baseband where it begins
     rx_baseband = rx_baseband(global_preamble_start-fm0_samp:end);
         
-    if do_plots
+    if DO_PLOTS
         figure(4);
     end
     % CORRELATION AND DECODING %
@@ -361,7 +379,7 @@ for n=1:Nang
         %%% comment out for correlation at every packet
         preamble_start = fm0_samp;
 
-        if do_plots
+        if DO_PLOTS
             clf;
             
             plot(abs_corr/30);
@@ -419,7 +437,7 @@ for n=1:Nang
         decoded_data(beg_bit_dex:end_bit_dex) = bits;
     end
     
-    if do_plots
+    if DO_PLOTS
         figure(5);
         hold on;
         plot(channel_estimates,'x','linewidth',2);
