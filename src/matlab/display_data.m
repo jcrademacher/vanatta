@@ -1,8 +1,9 @@
-sig_0 = read_complex_binary('../../rx_outputs/River PAB2 Van Atta 12-14-2022/fixed_single_006A_chest_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_6m_5m_hphydro_diff_0.dat');
-sig = real(sig_0(24:end))-imag(sig_0(24:end));
-fs = 2e5;
+sig_0 = read_complex_binary('../../rx_outputs/River PAB2 Van Atta 12-21-2022/fixed_vanatta4x2_nostag_006B_006F_006A_006C_x_001A_004A_004B_004D_chest_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_other_60Vrms_11m_11m_1m_foam_sep_purui_rx_0.dat');
+sig = real(sig_0(24:end));
+fs = 192e3;
 fc = 18.5e3;
 
+%sig = rx_baseband;
 t = [0:1/fs:length(sig)/fs-1/fs];
 %sig = awgn(cos(2*pi*fc*t),30);
 figure(1);
@@ -10,11 +11,11 @@ hold on;
 plot(sig);
 
 
-window_size = floor(length(sig)/10);
+window_size = floor(length(sig)/100);
 window = chebwin(window_size);
 Nfft = 2^nextpow2(fs*10);
 
-[pxx,f] = pwelch(sig,window,[],Nfft,fs);
+[pxx,f] = pwelch(sig,window,[],Nfft,fs,'power');
 % 
 % max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
 % [maxval,mindex] = max(pxx(max_search)); % max in each row

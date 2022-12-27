@@ -57,8 +57,8 @@ expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_
 %expected_data = repmat(preamble,1,4*N_packets);
 
 % highpass filter cutoffs
-fsb1 = fb/10;
-fpb1 = fb;
+fsb1 = fb/100;
+fpb1 = fb/2;
 dec_fac = 2; % decimation factor before lowpass and downconversion
 dfac = 5;   % donwsampling factor
 
@@ -82,17 +82,18 @@ gdlp = mean(gdlp);
 [gdhp,w] = grpdelay(hpFilt);
 gdhp = mean(gdhp);
 
-angles = 0;%[-90:5:35 45:5:90];
+angles = 0;%[-90:5:90];
 Nang = length(angles);
 
 %%%% END DESIGN PARAMETERS %%%%
 
 %%%% PROGRAM OPTIONS %%%%
-VERBOSE = 0;
+VERBOSE = 1;
 DO_PLOTS = 1;
 USE_PLL = 0;
 TX_LO = 0;
-%%%% END PROGRAM OPTIONS
+PURUI_PLATFORM = 0;
+%%%% END PROGRAM OPTIONS %%%%
 
 % JACK'S H, SNR, NOISE
 h_median_arr = zeros(Nang,1);
@@ -112,8 +113,9 @@ noise_median_post_dfe_arr = zeros(Nang,1);
 
 
 BER = zeros(Nang,1);
+BER_DFE = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Van Atta 12-15-2022/';
+root = '../../rx_outputs/River PAB2 Van Atta 12-22-2022/';
 
 expected_preamble = filtfilt(lpFilt,expected_preamble')';
 expected_preamble = downsample(expected_preamble,dfac*dec_fac);
@@ -121,8 +123,6 @@ expected_data_signal = downsample(expected_data_signal,dfac*dec_fac);
 
 for n=1:Nang
     tic
-    fs = 2e5;
-    fm0_samp = fs/fb;
 
     ang = angles(n);
     
@@ -145,21 +145,27 @@ for n=1:Nang
     end
     
     
-    filename = 'fixed_vanatta4x2_stag_006B_006F_006A_006C_x_001A_004A_004B_004D_chest_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_14m_13m_hphydro_diff_0.dat';
+    filename = 'fixed_vanatta4x2_nostag_006B_006F_006A_006C_x_001A_004A_004B_004D_chest_txfmr_nicktb_siggen_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_93Vrms_25m_25m_1m_foam_sep_hphydro_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
-
-    yr = read_complex_binary(filepath);        
-    sig = yr(sample_offset:end);
     
-    sig = decimate(sig,dec_fac);
+    if TX_LO
+        filepath = strrep(filepath,'.dat','.00.dat');
+    end
+
+    yr = read_complex_binary(filepath);
+    
+    if PURUI_PLATFORM
+        rx_signals = real(yr).';
+    else
+        sig = yr(sample_offset:end).';
+        rx_signals = real(sig)-imag(sig);
+    end
+
+    rx_signals = decimate(rx_signals,dec_fac);
     fs = fs/dec_fac;
-   
-    rx_len = length(sig);
-    % Nel x rx_len size matrix of input signals, where each row is time-series on an individual array element
-    rx_signals = zeros(1,rx_len);
-    rx_signals(1,:) = real(sig)-imag(sig);
+    rx_len = length(rx_signals);
     
     %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
     % have had some issues with it in the past and since RX and TX USRPs are 
@@ -181,14 +187,18 @@ for n=1:Nang
     lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
     
     if TX_LO
-        lo = read_complex_binary(filename);
+        lo = real(read_complex_binary(strrep(filepath,'.00.dat','.01.dat')))';
         lo = lo(sample_offset:end);
+          
 
-        corr = xcorr(rx_signals',lo');
-        corr = corr(length(rx_signals):end);
-        [max,lo_start] = max(corr);
+        lo = decimate(lo,dec_fac);
 
-        rx_signals = rx_signals(lo_start:end);
+%         corr = xcorr(rx_signals',lo');
+%         corr = corr(length(rx_signals):end);
+%         [max_val,lo_start] = max(corr);
+% 
+%         rx_signals = rx_signals(lo_start:end);
+%         lo = lo(1:end-lo_start+1);
         
     %%%% SOFTWARE PLL %%%%
     % this block replaces t and lo if USE_PLL = 1
@@ -249,7 +259,7 @@ for n=1:Nang
     fm0_samp = fs/fb;
     
     rx_baseband = fftfilt(hpFilt,rx_baseband')';
-    rx_baseband = rx_baseband(init_delay*fs+gdlp+gdhp-fm0_samp:end);
+    rx_baseband = rx_baseband(round(init_delay*fs+gdlp+gdhp-fm0_samp):end);
     
     sig_sec = rx_baseband;
 %     Nfft = 2^nextpow2(length(sig_sec));
@@ -337,7 +347,8 @@ for n=1:Nang
     abs_corr = abs_corr/preamble_max;
     %%%% end full data sequence correlation %%%%
     
-    %global_preamble_start = global_preamble_start - fm0_samp/2;
+    %global_preamble_start = global_preamble_start + fm0_samp/2;
+    
 
     if DO_PLOTS
         figure(3);
@@ -465,14 +476,16 @@ for n=1:Nang
 
     rx_baseband = rx_baseband(fm0_samp+1:N_tot_bits*fm0_samp+fm0_samp);
     %%
-    N_training = 400;
+    N_training = 300;
     [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ... 
         DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs,1);
     
-    N_training = 1;
-    [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ...
-        DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,1);
+%     N_training = 1;
+%     [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ...
+%         DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs,1);
     
+    BER_DFE(n) = ber_fin_a;
+
     snr_median_pre_dfe_arr(n) = 10*log10(snr_pre_final);
     snr_median_post_dfe_arr(n) = 10*log10(snr_post_final);
     
