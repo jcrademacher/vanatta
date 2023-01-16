@@ -1,4 +1,6 @@
-fs = 2e5;
+addpath ~/Documents/MIT/sk/oceans/vanatta/src/matlab
+
+fs = 192e3;
 fc = 18.5e3;
 fb = 500;
 c = 1500;
@@ -36,7 +38,7 @@ packet_delay = 0; % delay in between each packet
 N_tot_data_bits = N_data_bits*N_packets;
 N_tot_bits = (N_data_bits+N_preamble_bits)*N_packets;
 
-expected_data = real(read_complex_binary(strrep('../../tx_outputs/data_prbs_order=15_len=?_packets=625.dat','?',num2str(N_data_bits))))';
+expected_data = real(read_complex_binary(strrep('../../../tx_outputs/data_prbs_order=15_len=?_packets=625.dat','?',num2str(N_data_bits))))';
 
 %%%%% RESHAPE EXPECTED DATA INTO FORMAT FOR DFE %%%%%%
 expected_data_packets = zeros(1,N_tot_bits);
@@ -60,7 +62,7 @@ expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_
 fsb1 = fb/100;
 fpb1 = fb/2;
 dec_fac = 2; % decimation factor before lowpass and downconversion
-dfac = 5;   % donwsampling factor
+dfac = 4;   % donwsampling factor
 
 % lowpass filter cutoffs
 fpb1_lp = 5*fb;
@@ -82,17 +84,17 @@ gdlp = mean(gdlp);
 [gdhp,w] = grpdelay(hpFilt);
 gdhp = mean(gdhp);
 
-angles = round([-90:15:90]/0.9)*0.9;
+angles = [0];
 Nang = length(angles);
 
 %%%% END DESIGN PARAMETERS %%%%
 
 %%%% PROGRAM OPTIONS %%%%
 VERBOSE = 1;
-DO_PLOTS = 0;
+DO_PLOTS = 1;
 USE_PLL = 0;
 TX_LO = 0;
-PURUI_PLATFORM = 0;
+PURUI_PLATFORM = 1;
 %%%% END PROGRAM OPTIONS %%%%
 
 % JACK'S H, SNR, NOISE
@@ -115,7 +117,7 @@ noise_median_post_dfe_arr = zeros(Nang,1);
 BER = zeros(Nang,1);
 BER_DFE = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Proposal Experiments 11-09-2022/';
+root = '../../../rx_outputs/River PAB2 Van Atta 01-10-2023/';
 
 expected_preamble = filtfilt(lpFilt,expected_preamble')';
 expected_preamble = downsample(expected_preamble,dfac*dec_fac);
@@ -145,7 +147,7 @@ for n=1:Nang
     end
     
     
-    filename = 'rx_vanatta2_chest_diff_pab2_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat';
+    filename = 'fixed_vanatta4x2_nostag_006B_006F_006A_006C_x_001A_004A_004B_004D_txfmr_nicktb_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_22m_22m_1m_foam_sep_purui_rx_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));
@@ -153,15 +155,11 @@ for n=1:Nang
     if TX_LO
         filepath = strrep(filepath,'.dat','.00.dat');
     end
-
-    yr = read_complex_binary(filepath);
     
-    if PURUI_PLATFORM
-        rx_signals = real(yr).';
-    else
-        sig = yr(sample_offset:end).';
-        rx_signals = real(sig)-imag(sig);
-    end
+    size = [7 7000000];
+    id = fopen(filepath,'r');
+    yr = fread(id,size,'float32').';
+    rx_signals = yr(:,7).';
 
     rx_signals = decimate(rx_signals,dec_fac);
     fs_n = fs/dec_fac;
