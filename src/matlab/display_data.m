@@ -10,11 +10,11 @@ hold on;
 plot(sig);
 
 
-window_size = floor(length(sig)/10);
+window_size = floor(length(sig)/100);
 window = chebwin(window_size);
 Nfft = 2^nextpow2(fs*10);
 
-[pxx,f] = pwelch(sig,window,[],Nfft,fs);
+[pxx,f] = pwelch(sig,window,[],Nfft,fs,'power');
 % 
 % max_search = [round(Nfft/fs*(fc-1)):round(Nfft/fs*(fc+1))];
 % [maxval,mindex] = max(pxx(max_search)); % max in each row
