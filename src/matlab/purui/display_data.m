@@ -1,9 +1,11 @@
 size = [7 7000000];
 
-id = fopen('../../../rx_outputs/River PAB2 Van Atta 01-10-2023/test_rx_01102022.dat','r');
+filename = "fixed_vanatta4x2_nostag_006B_006F_006A_006C_x_001A_004A_004B_004D_txfmr_nicktb_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_81m_81m_1m_2foam_sep_purui_rx_0.dat";
+
+id = fopen(strcat('/home/jradema/Documents/sk/oceans/rx_outputs/River_PAB2_Van_Atta_01-11-2023/',filename),'r');
 sig = fread(id,size,'float32').';
 
-ch1 = sig(:,1);
+ch1 = sig(6e4:end,4);
 
 fs = 192e3;
 fc = 18.5e3;
@@ -17,9 +19,9 @@ hold on;
 plot(ch1);
 
 
-window_size = floor(length(ch1)/100);
-window = chebwin(window_size);
-Nfft = 2^nextpow2(fs*10);
+window_size = 7e2;
+window = chebwin(window_size, 300);
+Nfft = 2^10;
 
 [pxx,f] = pwelch(ch1,window,[],Nfft,fs);
 % 
@@ -30,7 +32,7 @@ Nfft = 2^nextpow2(fs*10);
 
 figure(2);
 
-plot(f/1e3,10*log10(pxx));
+plot(f/1e3,10*log10(pxx)+180);
 xlabel("Freq (kHz)");
 ylabel("dB re 1uPa^2/Hz");
 % xlim([1e3 100e3]);
