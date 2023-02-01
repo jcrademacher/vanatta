@@ -9,52 +9,31 @@ wc = 2*pi*fc;
 init_delay = 20e-3;%30e-3;
 sample_offset = 24;
 
-dd = 3;
-du = 2;
-d0 = dd-du;
-
-% A0 is direct path mag, Ad is downlink path mag, Au is uplink path mag
-A0 = 0.9;
-Ad = 0.1;
-Au = 0.2;
-
-tau_0 = d0 / c;
-tau_d = dd / c;
-tau_u = du / c;
-
 fm0_samp = fs/fb;
 
-preamble = [0 0 1 1 1 0 1 0];
-%preamble = [0 0 1 1 1 0 1 0 0 1];
-%preamble = [0 0 1 1 1 0 1 0 0 1 0 0 0 1 1 1];
-expected_preamble = generate_fm0_sig2(preamble,fm0_samp);
-    
-N_preamble_bits = length(preamble);
-N_data_bits = 16;
-
 % number of packets to decode
-N_packets = 625;
 packet_delay = 0; % delay in between each packet
-N_tot_data_bits = N_data_bits*N_packets;
-N_tot_bits = (N_data_bits+N_preamble_bits)*N_packets;
+N_bits = 10e3;
 
-expected_data = real(read_complex_binary(strrep('../../../tx_outputs/data_prbs_order=15_len=?_packets=625.dat','?',num2str(N_data_bits))))';
+expected_data_signal = real(read_complex_binary('../../../tx_outputs/msk_data_dr=500_ord=0_nbits=10k_fs=2e5.dat'));
+% expected_data = fread(edID,N_bits,'float32');
+% expected_data = expected_data(1:9800);
 
-%%%%% RESHAPE EXPECTED DATA INTO FORMAT FOR DFE %%%%%%
-expected_data_packets = zeros(1,N_tot_bits);
-% 1 2 3 4 5 6 7 8 17 18 19 ... 
-preamble_index = mod(0:(N_tot_bits-1),N_preamble_bits+N_data_bits)<N_preamble_bits;
-expected_data_packets(logical(preamble_index)) = repmat(preamble,1,N_packets);
-
-data_index = (mod(0:(N_tot_bits-1),N_preamble_bits+N_data_bits)>=N_preamble_bits) ...
-            .* (mod(0:(N_tot_bits-1),N_preamble_bits+N_data_bits)<(N_data_bits+N_preamble_bits));
-expected_data_packets(logical(data_index)) = expected_data;
-dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_packets)';
-%%%%% END DFE DATA RESHAPE %%%%
-
-% create full expected data signal
-expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
-expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*N_packets);
+% %%%%% RESHAPE EXPECTED DATA INTO FORMAT FOR DFE %%%%%%
+% expected_data_packets = zeros(1,N_bits);
+% % 1 2 3 4 5 6 7 8 17 18 19 ... 
+% preamble_index = mod(0:(N_bits-1),N_preamble_bits+N_data_bits)<N_preamble_bits;
+% expected_data_packets(logical(preamble_index)) = repmat(preamble,1,N_packets);
+% 
+% data_index = (mod(0:(N_bits-1),N_preamble_bits+N_data_bits)>=N_preamble_bits) ...
+%             .* (mod(0:(N_bits-1),N_preamble_bits+N_data_bits)<(N_data_bits+N_preamble_bits));
+% expected_data_packets(logical(data_index)) = expected_data;
+% dfe_expected_data = reshape(expected_data_packets,N_preamble_bits+N_data_bits,N_packets)';
+% %%%%% END DFE DATA RESHAPE %%%%
+% 
+% % create full expected data signal
+% expected_data_signal = generate_fm0_sig2(expected_data_packets,fm0_samp);
+% expected_data_signal = expected_data_signal(1:(N_data_bits+N_preamble_bits)*fm0_samp*N_packets);
 
 %expected_data = repmat(preamble,1,4*N_packets);
 
@@ -87,6 +66,8 @@ gdhp = mean(gdhp);
 angles = [0];
 Nang = length(angles);
 
+expected_data_signal = generate_fm0_sig2(expected_data,fm0_samp/(dec_fac*dfac));
+
 %%%% END DESIGN PARAMETERS %%%%
 
 %%%% PROGRAM OPTIONS %%%%
@@ -117,11 +98,11 @@ noise_median_post_dfe_arr = zeros(Nang,1);
 BER = zeros(Nang,1);
 BER_DFE = zeros(Nang,1);
 
-root = '../../../rx_outputs/River PAB2 Van Atta 01-10-2023/';
+root = '../../../rx_outputs/River_PAB2_Van_Atta_01-31-2023/';
 
-expected_preamble = filtfilt(lpFilt,expected_preamble')';
-expected_preamble = downsample(expected_preamble,dfac*dec_fac);
-expected_data_signal = downsample(expected_data_signal,dfac*dec_fac);
+% expected_preamble = filtfilt(lpFilt,expected_preamble')';
+% expected_preamble = downsample(expected_preamble,dfac*dec_fac);
+% expected_data_signal = downsample(expected_data_signal,dfac*dec_fac);
 
 for n=1:Nang
     tic
@@ -141,359 +122,363 @@ for n=1:Nang
     if rem(ang,1) ~= 0
         ang_str = strrep(ang_str,".",",");
     end
-
-    if rem(ang,1) == 0
-        ang_str = strcat(ang_str,',0');
-    end
-    
-    
-    filename = 'fixed_vanatta4x2_nostag_006B_006F_006A_006C_x_001A_004A_004B_004D_txfmr_nicktb_18,5kfc_0,0deg_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_005B_purui_tx_60Vrms_22m_22m_1m_foam_sep_purui_rx_0.dat';
-
-    %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
-    filepath = strcat(root,strrep(filename,'?',ang_str));
-    
-    if TX_LO
-        filepath = strrep(filepath,'.dat','.00.dat');
-    end
-    
-    size = [7 7000000];
-    id = fopen(filepath,'r');
-    yr = fread(id,size,'float32').';
-    rx_signals = yr(:,7).';
-
-    rx_signals = decimate(rx_signals,dec_fac);
-    fs_n = fs/dec_fac;
-    rx_len = length(rx_signals);
-    
-    %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
-    % have had some issues with it in the past and since RX and TX USRPs are 
-    % synchronized in most experiments directly using the known fc works fine
-    
-    Nfft = 100*fs_n;
-    rx_fft = fft(rx_signals',Nfft)';
-    fft_mag = abs(rx_fft);
-    max_search = [round(Nfft/fs_n*(fc-1)):round(Nfft/fs_n*(fc+1))];
-    [maxval,mindex] = max(fft_mag(:,max_search),[],2); % max in each row
-    carrier_phase = angle(rx_fft(max_search(mindex)'));
-    carrier_freq = fs_n/Nfft*max_search(mindex)';
-    
-    %carrier_freq = fc;
-    %carrier_phase = 0;
-    
-    % generate the time series and local oscillator
-    t = [0:1/fs_n:(rx_len-1)/fs_n];
-    lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
-    
-    if TX_LO
-        lo = real(read_complex_binary(strrep(filepath,'.00.dat','.01.dat')))';
-        lo = lo(sample_offset:end);
-          
-
-        lo = decimate(lo,dec_fac);
-
-%         corr = xcorr(rx_signals',lo');
-%         corr = corr(length(rx_signals):end);
-%         [max_val,lo_start] = max(corr);
 % 
-%         rx_signals = rx_signals(lo_start:end);
-%         lo = lo(1:end-lo_start+1);
+%     if rem(ang,1) == 0
+%         ang_str = strcat(ang_str,',0');
+%     end
+    
+    
+    file_root = 'fixed_vanatta4x2_dr=500bps_ord=0_Vrms=40_10m_1m_single_foam_sep_purui_rx_ang=?deg_';
+    
+    for trial=0:2
+        %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
+        filepath = strcat(root,strrep(file_root,'?',ang_str),num2str(trial),".dat");
         
-    %%%% SOFTWARE PLL %%%%
-    % this block replaces t and lo if USE_PLL = 1
-    elseif USE_PLL
-        t_tot = rx_len/fs;
-        
-        ph = zeros(1,rx_len);
-        ph_est = zeros(1,rx_len);
-        lp = zeros(1,rx_len);
-        y = zeros(1,rx_len);
-        integ = zeros(1,rx_len);
-        
-        Bn = 1e-2*fs;
-        damp = 1/sqrt(2);
-        
-        k0 = 1;
-        kd = 0.5;
-        kp = 1/(kd*k0)*4*damp/(damp+1/(4*damp))*Bn/fs;
-        ki = 1/(kd*k0)*4/(damp+1/(4*damp))^2*(Bn/fs)^2;
-        
-        integ_out = 0;
-        ph_est(1) = carrier_phase;
-        
-        for i = 1:rx_len-1
-            t(i) = t_tot*i/rx_len;
-            % input signal
-            y(i) = rx_signals(1,i);%sin(2*pi*fc*t(n)+pi);
-        
-            % phase detect
-            ph(i) = kd*y(i)*imag(lo(i));
-        
-            % loop filter
-            integ_out = ki*ph(i)+integ_out;
-            lp(i) = kp*ph(i) + integ_out;
-        
-            % vco
-            ph_est(i+1) = ph_est(i) + k0*lp(i);
-            lo(i+1) = exp(-1j*(2*pi*carrier_freq*t_tot*(i+1)/rx_len+ph_est(i)));
+        if TX_LO
+            filepath = strrep(filepath,'.dat','.00.dat');
         end
-    
-        t(end) = t_tot;
         
-        figure(10);
-        plot(t,rx_signals(1,:));
-        hold on;
-        plot(t,real(lo));
-    end
-
-    % downconvert
-    rx_baseband = rx_signals.*lo;
+        size = [7 6000000];
+        id = fopen(filepath,'r');
+        yr = fread(id,size,'float32').';
+        rx_signals = yr(:,7).';
     
-    % lowpass filtering both removes the 2fc term and anti-alias filters
-    % filtfilt used for 0 group delay filtering
-    rx_baseband = fftfilt(lpFilt,rx_baseband')';
-    rx_baseband = downsample(rx_baseband,dfac);
-
-    fs_n = fs_n/dfac;
-    fm0_samp = fs_n/fb;
-    
-    rx_baseband = fftfilt(hpFilt,rx_baseband')';
-    rx_baseband = rx_baseband(round(init_delay*fs_n+gdlp+gdhp-fm0_samp):end);
-    
-    sig_sec = rx_baseband;
-%     Nfft = 2^nextpow2(length(sig_sec));
-%     fft_sig = fft(sig_sec,Nfft);
-%     [subcar_peak,subcar_peak_index] = max(fft_sig);
-%     subcar_peak_f = subcar_peak_index/Nfft*fs_n;
-%     subcar_peak_phase = angle(subcar_peak);
-%     f = [-fs_n/2:fs_n/Nfft:fs_n/2-fs_n/Nfft];
-    
-    t_window = 0.1;
-    window = chebwin(t_window*fs_n);
-    Nfft = 2^nextpow2(length(window));
-    
-    if DO_PLOTS
-        figure(1);
-        hold on;
-        [pxx,f] = pwelch(sig_sec,window,[],Nfft,fs_n);
-        plot(f,10*log10(pxx));
-        grid on;
-        grid minor;
-
-    
-        % disp("Total Average Power (dB):");
-        % disp(num2str(10*log10(tot_pow)));
+        rx_signals = decimate(rx_signals,dec_fac);
+        fs_n = fs/dec_fac;
+        rx_len = length(rx_signals);
         
-        figure(2);
-        subplot(2,1,1);
-        hold on;
-        title("Real Part RX Baseband")
-        plot(real(sig_sec));
-        ylabel("Amplitude (V)");
-        subplot(2,1,2);
-        hold on;
-        plot(imag(sig_sec));
-        ylabel("Amplitude (V)");
-        xlabel("Samples");
-        title("Imag Part RX Baseband");
-    end
+        %%%% CARRIER FREQUENCY AND PHASE EXTRACTION %%%%
+        % have had some issues with it in the past and since RX and TX USRPs are 
+        % synchronized in most experiments directly using the known fc works fine
+        
+        Nfft = 100*fs_n;
+        rx_fft = fft(rx_signals',Nfft)';
+        fft_mag = abs(rx_fft);
+        max_search = [round(Nfft/fs_n*(fc-1)):round(Nfft/fs_n*(fc+1))];
+        [maxval,mindex] = max(fft_mag(:,max_search),[],2); % max in each row
+        carrier_phase = angle(rx_fft(max_search(mindex)'));
+        carrier_freq = fs_n/Nfft*max_search(mindex)';
+        
+        %carrier_freq = fc;
+        %carrier_phase = 0;
+        
+        % generate the time series and local oscillator
+        t = [0:1/fs_n:(rx_len-1)/fs_n];
+        lo = exp(1j*(2*pi*carrier_freq*t+carrier_phase));
+        
+        if TX_LO
+            lo = real(read_complex_binary(strrep(filepath,'.00.dat','.01.dat')))';
+            lo = lo(sample_offset:end);
+              
     
+            lo = decimate(lo,dec_fac);
     
-%% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
-    
-    % N_data_bits = 0;
+    %         corr = xcorr(rx_signals',lo');
+    %         corr = corr(length(rx_signals):end);
+    %         [max_val,lo_start] = max(corr);
     % 
-    % % resample for even integer fm0_samp value
-    % % with fs_n/fb divisble by 2 this code is not run
-    % if mod(fs_n/fb,2) ~= 0
-    %     p = (ceil(fs_n/fb)+1)*fb;
-    %     q = fs_n;
-    %     
-    %     rx_baseband = resample(rx_baseband,p,q);
-    %     
-    %     fs_n = p;
-    % end
-    
-    % % estimates after channel projection for individual packets
-    preamble_len = fm0_samp*N_preamble_bits;
-    data_len = fm0_samp*N_data_bits;                 % known data length in samples
-    packet_len = data_len+preamble_len;     % packet length in samples
-   
-    data_estimates = zeros(1,data_len*N_packets);
-    decoded_data = zeros(1,N_packets*N_data_bits);
-    packet_estimates = zeros(1,packet_len*N_packets);
-    
-    channel_estimates = zeros(1,N_packets);
-    channel_snrs = zeros(1,N_packets);
-    noise_power = zeros(1,N_packets);
-    
-    decode_preamble = expected_preamble-mean(expected_preamble);
-    
-    packet_delay_adj = floor(packet_delay*fs_n);
-
-    % tx norm is length of preamble for binary keying (-1,+1)
-    tx_norm = sum(abs(decode_preamble).^2);
-
-    fm0_half_samp = ceil(fm0_samp/2);
-
-    %%% full data sequence correlation to find global preamble start %%%
-    rcorr = xcorr(real(rx_baseband)',expected_data_signal');
-    icorr = xcorr(imag(rx_baseband)',expected_data_signal');
-
-    corr_tot = rcorr(length(rx_baseband):end)+1j*icorr(length(rx_baseband):end);
-    abs_corr = abs(corr_tot);
-    [preamble_max,global_preamble_start] = max(abs_corr);
-    abs_corr = abs_corr/preamble_max;
-    %%%% end full data sequence correlation %%%%
-    
-    %global_preamble_start = global_preamble_start + fm0_samp/2;
-    
-
-    if DO_PLOTS
-        figure(3);
-        plot(abs_corr/100);
-        hold on;
-        plot(real(rx_baseband));
-        plot([zeros(1,global_preamble_start) expected_data_signal/1000]);
-    end
-    
-    
-    % cutoff rx_baseband where it begins
-    rx_baseband = rx_baseband(global_preamble_start-fm0_samp:end);
-        
-    if DO_PLOTS
-        figure(4);
-    end
-    % CORRELATION AND DECODING %
-    for pnum=1:N_packets
-        % remove +sample_delay_adj*(pnum-1) for single correlation
-        begdex = (pnum-1)*packet_len+1+packet_delay_adj*(pnum-1);
-        endex = pnum*packet_len+packet_delay_adj*(pnum-1);
-        end_preamble_dex = (pnum-1)*packet_len+floor(1.45*preamble_len)+packet_delay_adj*(pnum-1);
-
-        beg_data_dex = (pnum-1)*data_len+1;
-        end_data_dex = pnum*data_len+fm0_samp;
-    
-        beg_bit_dex = (pnum-1)*N_data_bits+1;
-        end_bit_dex = pnum*N_data_bits;
-        
-        % perform cross correlation for packet start
-%         [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
-%         [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
-%         % removes tails of correlation 
-%         corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
-%         abs_corr = abs(corr_tot);
-%         % find maximum correlation and begin decoding from there
-%         [preamble_max,preamble_start] = max(abs_corr); 
-        
-        %%% comment out for correlation at every packet
-        preamble_start = fm0_samp;
-
-        if DO_PLOTS
-            clf;
+    %         rx_signals = rx_signals(lo_start:end);
+    %         lo = lo(1:end-lo_start+1);
             
-            plot(abs_corr/30);
+        %%%% SOFTWARE PLL %%%%
+        % this block replaces t and lo if USE_PLL = 1
+        elseif USE_PLL
+            t_tot = rx_len/fs;
+            
+            ph = zeros(1,rx_len);
+            ph_est = zeros(1,rx_len);
+            lp = zeros(1,rx_len);
+            y = zeros(1,rx_len);
+            integ = zeros(1,rx_len);
+            
+            Bn = 1e-2*fs;
+            damp = 1/sqrt(2);
+            
+            k0 = 1;
+            kd = 0.5;
+            kp = 1/(kd*k0)*4*damp/(damp+1/(4*damp))*Bn/fs;
+            ki = 1/(kd*k0)*4/(damp+1/(4*damp))^2*(Bn/fs)^2;
+            
+            integ_out = 0;
+            ph_est(1) = carrier_phase;
+            
+            for i = 1:rx_len-1
+                t(i) = t_tot*i/rx_len;
+                % input signal
+                y(i) = rx_signals(1,i);%sin(2*pi*fc*t(n)+pi);
+            
+                % phase detect
+                ph(i) = kd*y(i)*imag(lo(i));
+            
+                % loop filter
+                integ_out = ki*ph(i)+integ_out;
+                lp(i) = kp*ph(i) + integ_out;
+            
+                % vco
+                ph_est(i+1) = ph_est(i) + k0*lp(i);
+                lo(i+1) = exp(-1j*(2*pi*carrier_freq*t_tot*(i+1)/rx_len+ph_est(i)));
+            end
+        
+            t(end) = t_tot;
+            
+            figure(10);
+            plot(t,rx_signals(1,:));
             hold on;
-            plot(10*real(rx_baseband(begdex:end_preamble_dex)));
-            plot([zeros(1,preamble_start) decode_preamble/100]);
+            plot(t,real(lo));
         end
-        %xlim([0 1000]);
-
-%         if pnum == 207
-%             test = 1;
+    
+        % downconvert
+        rx_baseband = rx_signals.*lo;
+        
+        % lowpass filtering both removes the 2fc term and anti-alias filters
+        % filtfilt used for 0 group delay filtering
+        rx_baseband = fftfilt(lpFilt,rx_baseband')';
+        rx_baseband = downsample(rx_baseband,dfac);
+    
+        fs_n = fs_n/dfac;
+        fm0_samp = fs_n/fb;
+        
+        rx_baseband = fftfilt(hpFilt,rx_baseband')';
+        rx_baseband = rx_baseband(round(init_delay*fs_n+gdlp+gdhp-fm0_samp):end);
+        
+        sig_sec = rx_baseband;
+    %     Nfft = 2^nextpow2(length(sig_sec));
+    %     fft_sig = fft(sig_sec,Nfft);
+    %     [subcar_peak,subcar_peak_index] = max(fft_sig);
+    %     subcar_peak_f = subcar_peak_index/Nfft*fs_n;
+    %     subcar_peak_phase = angle(subcar_peak);
+    %     f = [-fs_n/2:fs_n/Nfft:fs_n/2-fs_n/Nfft];
+        
+        t_window = 0.1;
+        window = chebwin(t_window*fs_n);
+        Nfft = 2^nextpow2(length(window));
+        
+        if DO_PLOTS
+            figure(1);
+            hold on;
+            [pxx,f] = pwelch(sig_sec,window,[],Nfft,fs_n);
+            plot(f,10*log10(pxx));
+            grid on;
+            grid minor;
+    
+        
+            % disp("Total Average Power (dB):");
+            % disp(num2str(10*log10(tot_pow)));
+            
+            figure(2);
+            subplot(2,1,1);
+            hold on;
+            title("Real Part RX Baseband")
+            plot(real(sig_sec));
+            ylabel("Amplitude (V)");
+            subplot(2,1,2);
+            hold on;
+            plot(imag(sig_sec));
+            ylabel("Amplitude (V)");
+            xlabel("Samples");
+            title("Imag Part RX Baseband");
+        end
+        
+        
+    %% CORRELATE, ESTIMATE, DECODE, and COMPUTE BER %%
+        
+        % N_data_bits = 0;
+        % 
+        % % resample for even integer fm0_samp value
+        % % with fs_n/fb divisble by 2 this code is not run
+        % if mod(fs_n/fb,2) ~= 0
+        %     p = (ceil(fs_n/fb)+1)*fb;
+        %     q = fs_n;
+        %     
+        %     rx_baseband = resample(rx_baseband,p,q);
+        %     
+        %     fs_n = p;
+        % end
+        
+        % % estimates after channel projection for individual packets
+%         preamble_len = fm0_samp*N_preamble_bits;
+%         data_len = fm0_samp*N_data_bits;                 % known data length in samples
+%         packet_len = data_len+preamble_len;     % packet length in samples
+%        
+%         data_estimates = zeros(1,data_len*N_packets);
+%         decoded_data = zeros(1,N_packets*N_data_bits);
+%         packet_estimates = zeros(1,packet_len*N_packets);
+        
+%         channel_estimates = zeros(1,N_packets);
+%         channel_snrs = zeros(1,N_packets);
+%         noise_power = zeros(1,N_packets);
+%         
+%         decode_preamble = expected_preamble-mean(expected_preamble);
+%         
+%         packet_delay_adj = floor(packet_delay*fs_n);
+%     
+%         % tx norm is length of preamble for binary keying (-1,+1)
+%         tx_norm = sum(abs(decode_preamble).^2);
+%     
+%         fm0_half_samp = ceil(fm0_samp/2);
+    
+        %%% full data sequence correlation to find global preamble start %%%
+        rcorr = xcorr(real(rx_baseband).',expected_data_signal.');
+        icorr = xcorr(imag(rx_baseband).',expected_data_signal.');
+    
+        corr_tot = rcorr(length(rx_baseband):end)+1j*icorr(length(rx_baseband):end);
+        abs_corr = abs(corr_tot);
+        [preamble_max,global_preamble_start] = max(abs_corr);
+        abs_corr = abs_corr/preamble_max;
+        %%%% end full data sequence correlation %%%%
+        
+        %global_preamble_start = global_preamble_start + fm0_samp/2;
+        
+    
+        if DO_PLOTS
+            figure(3);
+            plot(abs_corr/100);
+            hold on;
+            plot(real(rx_baseband));
+            plot([zeros(1,global_preamble_start) expected_data_signal/1000]);
+        end
+        
+        
+        % cutoff rx_baseband where it begins
+        rx_baseband = rx_baseband(global_preamble_start-fm0_samp:end);
+            
+%         if DO_PLOTS
+%             figure(4);
 %         end
 
-        % slice out data packet found from correlation
-        packet = rx_baseband(begdex+preamble_start-fm0_half_samp:endex+preamble_start+fm0_half_samp);
-        % remove the mean
-        packet = packet - mean(packet(1:preamble_len));
-        % slice out preamble
-        packet_preamble = packet(fm0_half_samp+1:fm0_half_samp+preamble_len);
-        % slice out data
-        packet_data = packet(preamble_len+1:end);
+
+        % CORRELATION AND DECODING %
+%         for pnum=1:N_packets
+% %             % remove +sample_delay_adj*(pnum-1) for single correlation
+% %             begdex = (pnum-1)*packet_len+1+packet_delay_adj*(pnum-1);
+% %             endex = pnum*packet_len+packet_delay_adj*(pnum-1);
+% %             end_preamble_dex = (pnum-1)*packet_len+floor(1.45*preamble_len)+packet_delay_adj*(pnum-1);
+% %     
+% %             beg_data_dex = (pnum-1)*data_len+1;
+% %             end_data_dex = pnum*data_len+fm0_samp;
+% %         
+% %             beg_bit_dex = (pnum-1)*N_data_bits+1;
+% %             end_bit_dex = pnum*N_data_bits;
+%             
+%             % perform cross correlation for packet start
+%     %         [rcorr,rlags] = xcorr(real(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
+%     %         [icorr,ilags] = xcorr(imag(rx_baseband(begdex:end_preamble_dex)).',decode_preamble.');
+%     %         % removes tails of correlation 
+%     %         corr_tot = rcorr(end_preamble_dex-begdex+1:end)+1j*icorr(end_preamble_dex-begdex+1:end);
+%     %         abs_corr = abs(corr_tot);
+%     %         % find maximum correlation and begin decoding from there
+%     %         [preamble_max,preamble_start] = max(abs_corr); 
+%             
+%             %%% comment out for correlation at every packet
+% %             preamble_start = fm0_samp;
+%     
+%             if DO_PLOTS
+%                 clf;
+%                 
+%                 plot(abs_corr/30);
+%                 hold on;
+%                 plot(10*real(rx_baseband(begdex:end_preamble_dex)));
+%                 plot([zeros(1,preamble_start) decode_preamble/100]);
+%             end
+%             %xlim([0 1000]);
+%     
+%     %         if pnum == 207
+%     %             test = 1;
+%     %         end
+%     
+%             % slice out data packet found from correlation
+%             packet = rx_baseband(begdex+preamble_start-fm0_half_samp:endex+preamble_start+fm0_half_samp);
+%             % remove the mean
+%             packet = packet - mean(packet(1:preamble_len));
+%             % slice out preamble
+%             packet_preamble = packet(fm0_half_samp+1:fm0_half_samp+preamble_len);
+%             % slice out data
+%             packet_data = packet(preamble_len+1:end);
+%             
+%     %         %remove edges
+%     %         packet_preamble = remove_edges(packet_preamble,preamble1,0.05,fb,fs_n);
+%     %         decode_preamble = remove_edges(decode_preamble,preamble1,0.05,fb,fs_n);
+%     %         % recompute tx_norm since some samples have been removed
+%     %         tx_norm = sum(abs(decode_preamble).^2);
+%     
+%             % compute the channel estimate 
+%             channel_estimates(pnum) = sum(packet_preamble.*conj(decode_preamble))/tx_norm;
+%     
+%             % SNR calculation 
+%             noise_est = packet_preamble-channel_estimates(pnum).*decode_preamble;
+%             noise_est = reshape(noise_est,[fm0_samp N_preamble_bits]);
+%             
+%             noise_est_per_bit = mean(noise_est);
+%             noise_power(pnum) = var(noise_est_per_bit);
+%     
+%             channel_snrs(pnum) = abs(channel_estimates(pnum))^2/noise_power(pnum);
+%             
+%             % extract estimate of data only
+%             data_estimates(beg_data_dex:end_data_dex) = packet_data.*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;
+%             packet_estimates(begdex:endex) = packet(fm0_half_samp+1:end-fm0_half_samp).*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;   
+%     
+%             % decode packet
+%             if (mod(fm0_samp,2) == 0)
+%                 % should always enter this branch, camera_decode written by
+%                 % saad and waleed
+%                 bits = camera_decode(data_estimates(beg_data_dex:end_data_dex).',fm0_samp,N_data_bits);
+%             else
+%                 error("fm0_samp is not divisible by 2");
+%             end
+%             
+%             % place bits into decoded data matrix
+%             decoded_data(beg_bit_dex:end_bit_dex) = bits;
+%         end
         
-%         %remove edges
-%         packet_preamble = remove_edges(packet_preamble,preamble1,0.05,fb,fs_n);
-%         decode_preamble = remove_edges(decode_preamble,preamble1,0.05,fb,fs_n);
-%         % recompute tx_norm since some samples have been removed
-%         tx_norm = sum(abs(decode_preamble).^2);
-
-        % compute the channel estimate 
-        channel_estimates(pnum) = sum(packet_preamble.*conj(decode_preamble))/tx_norm;
-
-        % SNR calculation 
-        noise_est = packet_preamble-channel_estimates(pnum).*decode_preamble;
-        noise_est = reshape(noise_est,[fm0_samp N_preamble_bits]);
-        
-        noise_est_per_bit = mean(noise_est);
-        noise_power(pnum) = var(noise_est_per_bit);
-
-        channel_snrs(pnum) = abs(channel_estimates(pnum))^2/noise_power(pnum);
-        
-        % extract estimate of data only
-        data_estimates(beg_data_dex:end_data_dex) = packet_data.*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;
-        packet_estimates(begdex:endex) = packet(fm0_half_samp+1:end-fm0_half_samp).*conj(channel_estimates(pnum))./abs(channel_estimates(pnum)).^2;   
-
-        % decode packet
-        if (mod(fm0_samp,2) == 0)
-            % should always enter this branch, camera_decode written by
-            % saad and waleed
-            bits = camera_decode(data_estimates(beg_data_dex:end_data_dex).',fm0_samp,N_data_bits);
-        else
-            error("fm0_samp is not divisible by 2");
+        if DO_PLOTS
+            figure(5);
+            hold on;
+            plot(channel_estimates,'x','linewidth',2);
+            
+            xlim([-1 1]*1e-3);
+            ylim([-1 1]*1e-3);
+            
+            xlabel("Real");
+            ylabel("Imaginary");
+            
+            %axis equal;
+            grid on;
+            grid minor;
+            title("Channel Estimates Constellation");
         end
+    
+        h_median_arr(n) = median(channel_estimates);
+        h_median_db = 20*log10(h_median_arr(n));
+        h_median_snr_arr(n) = 10*log10(median(channel_snrs));
+        noise_median_arr(n) = 10*log10(median(noise_power));
         
-        % place bits into decoded data matrix
-        decoded_data(beg_bit_dex:end_bit_dex) = bits;
+        min_BER = 1/N_tot_data_bits;
+        BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
+        BER(BER == 0) = min_BER;
+    
+        rx_baseband = rx_baseband(fm0_samp+1:N_bits*fm0_samp+fm0_samp);
+        %%
+        N_training = 300;
+        [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ... 
+            DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs_n,1);
+        
+    %     N_training = 1;
+    %     [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ...
+    %         DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs_n,1);
+        
+        BER_DFE(n) = ber_fin_a;
+    
+        snr_median_pre_dfe_arr(n) = 10*log10(snr_pre_final);
+        snr_median_post_dfe_arr(n) = 10*log10(snr_post_final);
+        
+        h_median_pre_dfe_arr(n) = 10*log10(h_mag_pre_final);
+        h_median_post_dfe_arr(n) = 10*log10(h_mag_post_final);
+    
+        noise_median_pre_dfe_arr(n) = 10*log10(noise_pre_final);
+        noise_median_post_dfe_arr(n) = 10*log10(noise_post_final);
+    
+        
     end
-    
-    if DO_PLOTS
-        figure(5);
-        hold on;
-        plot(channel_estimates,'x','linewidth',2);
-        
-        xlim([-1 1]*1e-3);
-        ylim([-1 1]*1e-3);
-        
-        xlabel("Real");
-        ylabel("Imaginary");
-        
-        %axis equal;
-        grid on;
-        grid minor;
-        title("Channel Estimates Constellation");
-    end
-
-    h_median_arr(n) = median(channel_estimates);
-    h_median_db = 20*log10(h_median_arr(n));
-    h_median_snr_arr(n) = 10*log10(median(channel_snrs));
-    noise_median_arr(n) = 10*log10(median(noise_power));
-    
-    min_BER = 1/N_tot_data_bits;
-    BER(n) = sum(decoded_data ~= expected_data)/(N_data_bits*N_packets);
-    BER(BER == 0) = min_BER;
-
-    rx_baseband = rx_baseband(fm0_samp+1:N_tot_bits*fm0_samp+fm0_samp);
-    %%
-    N_training = 300;
-    [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ... 
-        DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,0,1,fb,fs_n,1);
-    
-%     N_training = 1;
-%     [weights,ber_fin_b,ber_fin_a,snr_pre_final,snr_post_final,h_mag_pre_final,h_mag_post_final,noise_pre_final,noise_post_final] = ...
-%         DFE_500_vanatta(packet_estimates.',dfe_expected_data,N_training,N_packets-N_training,1,weights,1,fb,fs_n,1);
-    
-    BER_DFE(n) = ber_fin_a;
-
-    snr_median_pre_dfe_arr(n) = 10*log10(snr_pre_final);
-    snr_median_post_dfe_arr(n) = 10*log10(snr_post_final);
-    
-    h_median_pre_dfe_arr(n) = 10*log10(h_mag_pre_final);
-    h_median_post_dfe_arr(n) = 10*log10(h_mag_post_final);
-
-    noise_median_pre_dfe_arr(n) = 10*log10(noise_pre_final);
-    noise_median_post_dfe_arr(n) = 10*log10(noise_post_final);
-
-    toc
 end
 %% PLOT VS ANGLE
 if length(angles) > 1
