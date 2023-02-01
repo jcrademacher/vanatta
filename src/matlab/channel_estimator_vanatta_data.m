@@ -36,7 +36,7 @@ packet_delay = 0; % delay in between each packet
 N_tot_data_bits = N_data_bits*N_packets;
 N_tot_bits = (N_data_bits+N_preamble_bits)*N_packets;
 
-expected_data = real(read_complex_binary(strrep('../../tx_outputs/data_prbs_order=15_len=?_packets=625.dat','?',num2str(N_data_bits))))';
+expected_data = real(read_complex_binary(strrep('../../../tx_outputs/data_prbs_order=15_len=?_packets=625.dat','?',num2str(N_data_bits))))';
 
 %%%%% RESHAPE EXPECTED DATA INTO FORMAT FOR DFE %%%%%%
 expected_data_packets = zeros(1,N_tot_bits);
@@ -82,7 +82,7 @@ gdlp = mean(gdlp);
 [gdhp,w] = grpdelay(hpFilt);
 gdhp = mean(gdhp);
 
-angles = round([-90:15:90]/0.9)*0.9;
+angles = [-90:15:90];
 Nang = length(angles);
 
 %%%% END DESIGN PARAMETERS %%%%
@@ -115,7 +115,7 @@ noise_median_post_dfe_arr = zeros(Nang,1);
 BER = zeros(Nang,1);
 BER_DFE = zeros(Nang,1);
 
-root = '../../rx_outputs/River PAB2 Proposal Experiments 11-09-2022/';
+root = '../../../rx_outputs/River PAB Van Atta 4 08-24-2022/';
 
 expected_preamble = filtfilt(lpFilt,expected_preamble')';
 expected_preamble = downsample(expected_preamble,dfac*dec_fac);
@@ -132,20 +132,20 @@ for n=1:Nang
     end
 
     ang_str = num2str(ang);
-%     if ang >= 0
-%         ang_str = strcat("+",ang_str);
-%     end
+    if ang >= 0
+        ang_str = strcat("+",ang_str);
+    end
 
     if rem(ang,1) ~= 0
         ang_str = strrep(ang_str,".",",");
     end
 
-    if rem(ang,1) == 0
-        ang_str = strcat(ang_str,',0');
-    end
+%     if rem(ang,1) == 0
+%         ang_str = strcat(ang_str,',0');
+%     end
     
     
-    filename = 'rx_vanatta2_chest_diff_pab2_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat';
+    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_6m_5m_hphydro_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));

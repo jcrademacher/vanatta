@@ -8,12 +8,13 @@ r = 1;
 phi = pi/6;
 do_direction_val = 1;
 
-imp1 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
-imp1 = imp1(1:801,:);
+% imp1 = readmatrix("../../impedance/PAB008A_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_004A_008A.CSV");
+% imp1 = imp1(1:801,:);
+imp2 = 40-1j*10;
 
 
-imp2 = readmatrix("../../impedance/PAB010B_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_010B_008A.CSV");
-imp2 = imp2(1:801,:);
+% imp2 = readmatrix("../../impedance/PAB010B_RX_IND+_1k-60k_801PTS_RIVER_ROTATOR_3MD_010B_008A.CSV");
+% imp2 = imp2(1:801,:);
 imp2 = 40+1j*10;
 
 dmin = 1e-2;
