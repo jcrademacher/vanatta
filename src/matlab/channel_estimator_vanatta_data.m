@@ -82,14 +82,14 @@ gdlp = mean(gdlp);
 [gdhp,w] = grpdelay(hpFilt);
 gdhp = mean(gdhp);
 
-angles = [-90:15:90];
+angles = -90;
 Nang = length(angles);
 
 %%%% END DESIGN PARAMETERS %%%%
 
 %%%% PROGRAM OPTIONS %%%%
 VERBOSE = 1;
-DO_PLOTS = 0;
+DO_PLOTS = 1;
 USE_PLL = 0;
 TX_LO = 0;
 PURUI_PLATFORM = 0;
@@ -115,7 +115,7 @@ noise_median_post_dfe_arr = zeros(Nang,1);
 BER = zeros(Nang,1);
 BER_DFE = zeros(Nang,1);
 
-root = '../../../rx_outputs/River PAB Van Atta 4 08-24-2022/';
+root = '../../../rx_outputs/River PAB2 Proposal Experiments 11-09-2022/';
 
 expected_preamble = filtfilt(lpFilt,expected_preamble')';
 expected_preamble = downsample(expected_preamble,dfac*dec_fac);
@@ -132,20 +132,20 @@ for n=1:Nang
     end
 
     ang_str = num2str(ang);
-    if ang >= 0
-        ang_str = strcat("+",ang_str);
-    end
+%     if ang >= 0
+%         ang_str = strcat("+",ang_str);
+%     end
 
     if rem(ang,1) ~= 0
         ang_str = strrep(ang_str,".",",");
     end
 
-%     if rem(ang,1) == 0
-%         ang_str = strcat(ang_str,',0');
-%     end
+    if rem(ang,1) == 0
+        ang_str = strcat(ang_str,',0');
+    end
     
     
-    filename = 'rx_vanatta4_chest_pab_008A_011B_011A_010B_stag9cm_7cm_sp_2,9mtxfmr_?deg_nx5_18,5kfc_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_6m_5m_hphydro_0.dat';
+    filename = 'rx_single_chest_diff_004B_alone_pab2_txfmr_?deg_nicktb_18,5kfc_8bit_pre_16bit_dat_prbs_0,5kbps_usrp_2,5m_depth_010A_purui_tx_2m_1m_hphydro_61Vrms_0.dat';
 
     %filename = 'rx_single_chest_pab_010B_7cm_sp_ind1,5m_+0deg_mosfet_18,5kfc_siggen_data_1kbps_usrp_2,5m_depth_3m_u2b_0,5m_hphydro_0.dat';
     filepath = strcat(root,strrep(filename,'?',ang_str));

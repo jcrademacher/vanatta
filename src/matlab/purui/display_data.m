@@ -1,8 +1,8 @@
 size = [7 7000000];
 
-filename = "fixed_vanatta4x2_dr=500bps_ord=0_Vrms=40_10m_1m_single_foam_sep_purui_rx_0.dat";
+filename = "test_data.bin";
 
-id = fopen(strcat('~/Documents/MIT/sk/oceans/vanatta/rx_outputs/River_PAB2_Van_Atta_01-24-2023/',filename),'r');
+id = fopen(strcat('~/Documents/sk/oceans/rx_outputs/',filename),'r');
 sig = fread(id,size,'float32').';
 
 ch1 = sig(6e4:end,7);
